@@ -1,4 +1,5 @@
 #include "import.h"
+#include "memory.h"
 #include "stdlib.h"
 #ifdef __linux__
 #include <linux/limits.h>
@@ -12,6 +13,18 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+
+typedef struct {
+  size_t length;
+  size_t *import_count;
+  char **imports;
+} Imports;
+
+static void init_imports(Imports *imports) {
+  imports->length = 0;
+  imports->import_count = NULL;
+  imports->imports = NULL;
+}
 
 static char *read_file(const char *file_path) {
   FILE *file = fopen(file_path, "rb");
