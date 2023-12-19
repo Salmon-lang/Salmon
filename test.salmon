@@ -1,9 +1,3 @@
-import      
-      
-          
-             
-          {
-  stdio,
-  stdnum,
-  stdarr
+import {
+  test
 }
