@@ -1,14 +1,30 @@
 #include "import.h"
+#include "memory.h"
 #include "stdlib.h"
+#ifdef __linux__
+#include <linux/limits.h>
+#elif __APPLE__
+#include <sys/syslimits.h>
+#elif _WIN32
+#include <windows.h>
+#define PATH_MAX MAX_PATH
+#endif
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
 typedef struct {
-  const char *start;
-  const char *current;
-} ImportScanner;
+  size_t length;
+  size_t *import_count;
+  char **imports;
+} Imports;
+
+static void init_imports(Imports *imports) {
+  imports->length = 0;
+  imports->import_count = NULL;
+  imports->imports = NULL;
+}
 
 static char *read_file(const char *file_path) {
   FILE *file = fopen(file_path, "rb");
@@ -43,18 +59,18 @@ static char peek_next(const char *start) {
 static void advance(const char **start) { (*start)++; }
 
 // Function to skip whitespace
-static const char *skip_white_space(const char *start) {
-    while (*start == ' ' || *start == '\r' || *start == '\t' || *start == '\n') {
-        advance(&start);
-    }
-    return start;
+static const char *skip_whitespace(const char *start) {
+  while (*start == ' ' || *start == '\r' || *start == '\t' || *start == '\n') {
+    advance(&start);
+  }
+  return start;
 }
 
 // Function to calculate the length of a substring without whitespace
 static size_t length_no_whitespace(const char *start, const char *end) {
   size_t length = 0;
   while (start <= end) {
-    start = skip_white_space(start);
+    start = skip_whitespace(start);
     if (start <= end) {
       length++;
       start++;
@@ -65,7 +81,7 @@ static size_t length_no_whitespace(const char *start, const char *end) {
 
 // Function to check if a given substring is an import statement
 static bool is_import(const char *start_of_file, const char *start) {
-  start = skip_white_space(start);
+  start = skip_whitespace(start);
   if (*start == 'i' && *(start + 1) == 'm' && *(start + 2) == 'p' &&
       *(start + 3) == 'o' && *(start + 4) == 'r' && *(start + 5) == 't') {
     return true;
@@ -81,17 +97,75 @@ static char *grab_imports(const char *start) {
   }
 
   size_t length = length_no_whitespace(start, end);
-  char *imports = (char *)malloc(length + 1);
+  char *imports = (char *)malloc(length);
 
   const char *temp = start;
-  for (size_t i = 0; i < length; ++i) {
-    temp = skip_white_space(temp);
+  for (size_t i = 0; i < length - 1; ++i) {
+    temp = skip_whitespace(temp);
     imports[i] = *temp;
     temp++;
   }
-  imports[length] = '\0';
+  imports[length - 1] = '\0';
 
   return imports;
+}
+
+static char *get_abs_file_path(char *relative_path) {
+  char actual_path[PATH_MAX];
+#ifdef __unix__
+
+  char *result = realpath(strcat(relative_path, ".salmon"), actual_path);
+  if (result) {
+    printf("Absolute Path: %s\n", actual_path);
+  } else {
+    perror("realpath");
+    // Handle the error, if any
+  }
+  return result;
+#elif _WIN32
+  DWORD result = GetFullPathNameA(strcat(relative_path, ".salmon"), PATH_MAX,
+                                  actual_path, NULL);
+  if (result != 0) {
+    printf("Absolute Path: %s\n", resolved_path);
+  } else {
+    perror("GetFullPathName");
+    // Handle the error, if any
+  }
+  char buffer[PATH_MAX];
+  sprintf(buffer, "%lu", result);
+  return buffer;
+#endif
+}
+
+char **split_string(const char *input, const char *delimiter,
+                    size_t *arraySize) {
+  char *str = strdup(
+      input); // Duplicate the input string to avoid modifying the original
+  char *token = strtok(str, delimiter);
+
+  *arraySize = 0;
+
+  // Count the number of tokens
+  while (token != NULL) {
+    (*arraySize)++;
+    token = strtok(NULL, delimiter);
+  }
+
+  // Allocate memory for the array of char pointers
+  char **resultArray = (char **)malloc(sizeof(char *) * (*arraySize));
+
+  // Reset the string for tokenization
+  strcpy(str, input);
+
+  // Tokenize the input string and store pointers in the array
+  token = strtok(str, delimiter);
+  for (size_t i = 0; i < *arraySize; i++) {
+    resultArray[i] = strdup(token);
+    token = strtok(NULL, delimiter);
+  }
+
+  free(str); // Free the duplicated string
+  return resultArray;
 }
 
 // Main function to combine files and extract imports
@@ -101,12 +175,25 @@ char *combine_files(const char *file_path) {
 
   if (start != NULL && is_import(file_contents, start)) {
     start += 6;
-    start = skip_white_space(start);
+    start = skip_whitespace(start);
     printf("%s", start);
     switch (*(start)) {
     case '{': {
-      char *imports = grab_imports(start);
-      printf("%s", imports);
+      char *imports = grab_imports(start + 1);
+      printf("%s\n", imports);
+      size_t length = 0;
+      char delimiter[] = ",";
+      char **import_list = split_string(imports, delimiter, &length);
+      printf("Array Size: %zu\n", length);
+      for (size_t i = 0; i < length; ++i) {
+        printf("%zu: %s\n", i, import_list[i]);
+      }
+      get_abs_file_path(import_list[0]);
+      for (size_t i = 0; i < length; ++i) {
+        free(import_list[i]); // Free individual strings
+      }
+      // Free the array itself
+      free(import_list);
       free(imports);
       break;
     }
