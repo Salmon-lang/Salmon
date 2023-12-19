@@ -12,4 +12,6 @@ project(CLox C)
 
 add_executable(
   salmon
+  src/main.c
+  src/import.c
 )
