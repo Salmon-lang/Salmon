@@ -14,4 +14,5 @@ add_executable(
   salmon
   src/main.c
   src/import.c
+  src/memory.c
 )
