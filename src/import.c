@@ -239,7 +239,14 @@ static char *remove_suffix(char *str, const char *suffix) {
   return str;
 }
 
-static char *get_content(char *file_path) { return ""; }
+static char *get_content(char *file_path) {
+  char *full_contents = read_file(file_path);
+  char *contents = strchr(full_contents, 'i');
+  if (is_import(full_contents, contents)) {
+    return strchr(full_contents, '}') + 1;
+  }
+  return full_contents;
+}
 
 // Main function to combine files and extract imports
 char *combine_files(char *file_path) {

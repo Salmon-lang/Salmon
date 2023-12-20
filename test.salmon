@@ -1,3 +1,7 @@
 import {
   test
 }
+
+function main(args) {
+  _print("Hello World!");
+}
