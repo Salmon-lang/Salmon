@@ -1,6 +1,7 @@
 #include "import.h"
 #include "memory.h"
 #include "stdlib.h"
+#include <ctype.h>
 #ifdef __linux__
 #include <linux/limits.h>
 #elif __APPLE__
@@ -40,6 +41,7 @@ static void free_imports(Imports *imports) {
 static bool contains_import(char **imports, size_t length, char *import) {
   for (size_t i = 0; i < length; ++i) {
     if (strcmp(imports[i], import) == 0) {
+      printf("%s == %s\n", imports[i], import);
       return true;
     }
   }
@@ -56,10 +58,13 @@ static size_t get_index_of_import(char **imports, size_t length, char *import) {
 }
 
 static void write_import(Imports *imports, char *import, char *contents) {
-  if (contains_import(imports->imports, imports->length, import)) {
-    imports->import_count[get_index_of_import(imports->imports, imports->length,
-                                              import)]++;
-    return;
+  printf("%s\n", import);
+  for (size_t i = 0; i < imports->length; ++i) {
+    printf("%s, %s\n", import, imports->imports[i]);
+    if (strcmp(imports->imports[i], import) == 0) {
+      imports->import_count[i]++;
+      return;
+    }
   }
   if (imports->capacity < imports->length + 1) {
     size_t old_capacity = imports->capacity;
@@ -71,9 +76,9 @@ static void write_import(Imports *imports, char *import, char *contents) {
     imports->contents =
         GROW_ARRAY(char *, imports->contents, old_capacity, imports->capacity);
   }
-  imports->imports[imports->length] = import;
+  imports->imports[imports->length] = strdup(import);
   imports->import_count[imports->length] = 1;
-  imports->contents[imports->length] = contents;
+  imports->contents[imports->length] = strdup(contents);
   imports->length++;
 }
 
@@ -130,11 +135,17 @@ static size_t length_no_whitespace(const char *start, const char *end) {
   return length;
 }
 
+static bool is_alpha_num_underscore(char c) {
+  return isalpha(c) || (c >= '0' && '9' >= c) || c == '_';
+}
+
 // Function to check if a given substring is an import statement
 static bool is_import(const char *start_of_file, const char *start) {
   start = skip_whitespace(start);
-  if (*start == 'i' && *(start + 1) == 'm' && *(start + 2) == 'p' &&
-      *(start + 3) == 'o' && *(start + 4) == 'r' && *(start + 5) == 't') {
+
+  if (strlen(start) > 7 && *start == 'i' && *(start + 1) == 'm' &&
+      *(start + 2) == 'p' && *(start + 3) == 'o' && *(start + 4) == 'r' &&
+      *(start + 5) == 't' && !is_alpha_num_underscore(*(start + 6))) {
     return true;
   }
   return false;
@@ -163,10 +174,12 @@ static char *grab_imports(const char *start) {
 
 static char *get_abs_file_path(char *relative_path) {
   printf("%s\n", relative_path);
+  char input_path[PATH_MAX];
+  strcpy(input_path, relative_path);
   char actual_path[PATH_MAX];
 #ifdef __unix__
 
-  char *result = realpath(strcat(relative_path, ".salmon"), actual_path);
+  char *result = realpath(strcat(input_path, ".salmon"), actual_path);
   if (result) {
     printf("Absolute Path: %s\n", actual_path);
   } else {
@@ -245,13 +258,13 @@ static char *get_content(char *file_path) {
   if (is_import(full_contents, contents)) {
     return strchr(full_contents, '}') + 1;
   }
+  printf("%s\n", full_contents);
   return full_contents;
 }
 
 // Main function to combine files and extract imports
 char *combine_files(char *file_path) {
-  char *path = malloc(strlen(file_path) + 1);
-  strcpy(path, file_path);
+  char *path = strdup(file_path); // Create a copy of the original file_path
   char *file_contents = read_file(file_path);
   const char *start = strchr(file_contents, 'i');
 
@@ -279,18 +292,15 @@ char *combine_files(char *file_path) {
       }
 
       Imports im;
-      printf("im\n");
       init_imports(&im);
-      printf("init\n");
+      print_imports(&im);
       write_import(&im, get_abs_file_path(remove_suffix(path, ".salmon")),
                    get_content(file_path));
+      print_imports(&im);
       for (size_t i = 0; i < length; ++i) {
         printf("%zu\n", i);
         char *current_import = get_abs_file_path(import_list[i]);
-        write_import(&im, current_import,
-                     contains_import(im.imports, im.length, current_import)
-                         ? ""
-                         : get_content(current_import));
+        write_import(&im, current_import, get_content(current_import));
       }
       print_imports(&im);
       free_imports(&im);
@@ -301,8 +311,10 @@ char *combine_files(char *file_path) {
     }
     default:
       printf("Import must have a body.\n");
+      free(path); // Free the allocated path before returning
       return NULL;
     }
   }
+  free(path); // Free the allocated path before returning
   return file_contents;
 }
