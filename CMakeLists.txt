@@ -6,6 +6,7 @@ if(CCACHE_PROGRAM)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
 endif()
 # Export compilation database in JSON format.
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
 project(CLox C)
