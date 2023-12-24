@@ -1,3 +1,6 @@
+import {
+  test
+}
 function hello_world() {
   _print("Hello world");
 }

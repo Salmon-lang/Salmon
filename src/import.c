@@ -18,6 +18,7 @@
 typedef struct {
   size_t length;
   size_t capacity;
+  bool *is_imported;
   size_t *import_count;
   char **contents;
   char **imports;
@@ -26,12 +27,14 @@ typedef struct {
 static void init_imports(Imports *imports) {
   imports->length = 0;
   imports->capacity = 0;
+  imports->is_imported = NULL;
   imports->import_count = NULL;
   imports->contents = NULL;
   imports->imports = NULL;
 }
 
 static void free_imports(Imports *imports) {
+  FREE_ARRAY(bool, imports->is_imported, imports->capacity);
   FREE_ARRAY(size_t, imports->import_count, imports->capacity);
   FREE_ARRAY(char *, imports->imports, imports->capacity);
   FREE_ARRAY(char *, imports->contents, imports->capacity);
@@ -75,7 +78,10 @@ static void write_import(Imports *imports, char *import, char *contents) {
                                        old_capacity, imports->capacity);
     imports->contents =
         GROW_ARRAY(char *, imports->contents, old_capacity, imports->capacity);
+    imports->is_imported =
+        GROW_ARRAY(bool, imports->is_imported, old_capacity, imports->capacity);
   }
+  imports->is_imported[imports->length] = false;
   imports->imports[imports->length] = strdup(import);
   imports->import_count[imports->length] = 1;
   imports->contents[imports->length] = strdup(contents);
@@ -262,6 +268,56 @@ static char *get_content(char *file_path) {
   return full_contents;
 }
 
+static bool get_all_imports(Imports *imports) {
+  bool added = true;
+  for (size_t i = 0; i < imports->length; ++i) {
+    if (imports->is_imported[i]) {
+      continue;
+    }
+    added = false;
+    char *file_contents = read_file(imports->imports[i]);
+    const char *start = strchr(file_contents, 'i');
+
+    if (start != NULL && is_import(file_contents, start)) {
+      start += 6;
+      start = skip_whitespace(start); // Corrected function name
+      printf("%s", start);
+
+      switch (*start) {
+      case '{': {
+        char *c = malloc(strlen(start) + 1); // Corrected memory allocation
+        strcpy(c, start);
+        char *importss = grab_imports(c + 1);
+        printf("%s\n", importss);
+
+        size_t length = 0;
+        char delimiter[] = ",";
+        char *comma = ",";
+        // Assuming split_string allocates memory for each element in the array
+        char **import_list = split_string(importss, delimiter, &length);
+
+        printf("Array Size: %zu\n", length);
+        for (size_t i = 0; i < length; ++i) {
+          printf("%zu: %s\n", i, import_list[i]);
+        }
+        for (size_t i = 0; i < length; ++i) {
+          printf("%zu\n", i);
+          char *current_import = get_abs_file_path(import_list[i]);
+          write_import(imports, current_import, get_content(current_import));
+        }
+        free(c);
+        imports->is_imported[i] = true;
+        break;
+      }
+      default:
+        printf("Import must have a body.\n");
+        return NULL;
+      }
+    }
+    imports->is_imported[i] = true;
+  }
+  return added;
+}
 // Main function to combine files and extract imports
 char *combine_files(char *file_path) {
   char *path = strdup(file_path); // Create a copy of the original file_path
@@ -283,7 +339,8 @@ char *combine_files(char *file_path) {
       size_t length = 0;
       char delimiter[] = ",";
       char *comma = ",";
-      // Assuming split_string allocates memory for each element in the array
+      // Assuming split_string allocates memory for each element in the
+      // array
       char **import_list = split_string(imports, delimiter, &length);
 
       printf("Array Size: %zu\n", length);
@@ -297,11 +354,8 @@ char *combine_files(char *file_path) {
       write_import(&im, get_abs_file_path(remove_suffix(path, ".salmon")),
                    get_content(file_path));
       print_imports(&im);
-      for (size_t i = 0; i < length; ++i) {
-        printf("%zu\n", i);
-        char *current_import = get_abs_file_path(import_list[i]);
-        write_import(&im, current_import, get_content(current_import));
-      }
+      while (!get_all_imports(&im))
+        ;
       print_imports(&im);
       free_imports(&im);
 
