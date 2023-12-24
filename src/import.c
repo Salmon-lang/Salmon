@@ -18,6 +18,7 @@
 typedef struct {
   size_t length;
   size_t capacity;
+  bool *is_imported;
   size_t *import_count;
   char **contents;
   char **imports;
@@ -26,12 +27,14 @@ typedef struct {
 static void init_imports(Imports *imports) {
   imports->length = 0;
   imports->capacity = 0;
+  imports->is_imported = NULL;
   imports->import_count = NULL;
   imports->contents = NULL;
   imports->imports = NULL;
 }
 
 static void free_imports(Imports *imports) {
+  FREE_ARRAY(bool, imports->is_imported, imports->capacity);
   FREE_ARRAY(size_t, imports->import_count, imports->capacity);
   FREE_ARRAY(char *, imports->imports, imports->capacity);
   FREE_ARRAY(char *, imports->contents, imports->capacity);
@@ -41,7 +44,6 @@ static void free_imports(Imports *imports) {
 static bool contains_import(char **imports, size_t length, char *import) {
   for (size_t i = 0; i < length; ++i) {
     if (strcmp(imports[i], import) == 0) {
-      printf("%s == %s\n", imports[i], import);
       return true;
     }
   }
@@ -58,9 +60,7 @@ static size_t get_index_of_import(char **imports, size_t length, char *import) {
 }
 
 static void write_import(Imports *imports, char *import, char *contents) {
-  printf("%s\n", import);
   for (size_t i = 0; i < imports->length; ++i) {
-    printf("%s, %s\n", import, imports->imports[i]);
     if (strcmp(imports->imports[i], import) == 0) {
       imports->import_count[i]++;
       return;
@@ -75,7 +75,10 @@ static void write_import(Imports *imports, char *import, char *contents) {
                                        old_capacity, imports->capacity);
     imports->contents =
         GROW_ARRAY(char *, imports->contents, old_capacity, imports->capacity);
+    imports->is_imported =
+        GROW_ARRAY(bool, imports->is_imported, old_capacity, imports->capacity);
   }
+  imports->is_imported[imports->length] = false;
   imports->imports[imports->length] = strdup(import);
   imports->import_count[imports->length] = 1;
   imports->contents[imports->length] = strdup(contents);
@@ -173,16 +176,13 @@ static char *grab_imports(const char *start) {
 }
 
 static char *get_abs_file_path(char *relative_path) {
-  printf("%s\n", relative_path);
   char input_path[PATH_MAX];
   strcpy(input_path, relative_path);
   char actual_path[PATH_MAX];
 #ifdef __unix__
 
   char *result = realpath(strcat(input_path, ".salmon"), actual_path);
-  if (result) {
-    printf("Absolute Path: %s\n", actual_path);
-  } else {
+  if (!result) {
     perror("realpath");
     // Handle the error, if any
   }
@@ -204,7 +204,6 @@ static char *get_abs_file_path(char *relative_path) {
 
 char **split_string(const char *input, const char *delimiter,
                     size_t *arraySize) {
-  printf("%s\n", input);
   char *str = strdup(
       input); // Duplicate the input string to avoid modifying the original
   char *token = strtok(str, delimiter);
@@ -258,10 +257,87 @@ static char *get_content(char *file_path) {
   if (is_import(full_contents, contents)) {
     return strchr(full_contents, '}') + 1;
   }
-  printf("%s\n", full_contents);
   return full_contents;
 }
 
+static bool get_all_imports(Imports *imports) {
+  bool added = true;
+  for (size_t i = 0; i < imports->length; ++i) {
+    if (imports->is_imported[i]) {
+      continue;
+    }
+    added = false;
+    char *file_contents = read_file(imports->imports[i]);
+    const char *start = strchr(file_contents, 'i');
+
+    if (start != NULL && is_import(file_contents, start)) {
+      start += 6;
+      start = skip_whitespace(start); // Corrected function name
+
+      switch (*start) {
+      case '{': {
+        char *c = malloc(strlen(start) + 1); // Corrected memory allocation
+        strcpy(c, start);
+        char *importss = grab_imports(c + 1);
+
+        size_t length = 0;
+        char delimiter[] = ",";
+        char *comma = ",";
+        // Assuming split_string allocates memory for each element in the array
+        char **import_list = split_string(importss, delimiter, &length);
+
+        for (size_t i = 0; i < length; ++i) {
+          char *current_import = get_abs_file_path(import_list[i]);
+          write_import(imports, current_import, get_content(current_import));
+        }
+        free(c);
+        imports->is_imported[i] = true;
+        break;
+      }
+      default:
+        printf("Import must have a body.\n");
+        return NULL;
+      }
+    }
+    imports->is_imported[i] = true;
+  }
+  return added;
+}
+
+static void sort_contents(Imports *imports) {
+  for (size_t i = 0; i < imports->length - 1; ++i) {
+    for (size_t j = i; j < imports->length - 1; ++j) {
+      if (imports->import_count[j] > imports->import_count[j + 1]) {
+        size_t k = imports->import_count[j];
+        char *con = imports->contents[j];
+        char *import = imports->imports[j];
+
+        imports->import_count[j] = imports->import_count[j + 1];
+        imports->contents[j] = imports->contents[j + 1];
+        imports->imports[j] = imports->imports[j + 1];
+
+        imports->import_count[j + 1] = k;
+        imports->contents[j + 1] = con;
+        imports->imports[j + 1] = import;
+      }
+    }
+  }
+}
+static size_t get_length(Imports *imports) {
+  size_t length = 0;
+  for (size_t i = 0; i < imports->length; ++i) {
+    length += strlen(imports->contents[i]);
+  }
+  return length;
+}
+static char *merge_imports(Imports *imports) {
+  size_t length = get_length(imports);
+  char *merged = calloc(length + 1, 1);
+  for (ssize_t i = imports->length - 1; i >= 0; --i) {
+    merged = strcat(merged, imports->contents[i]);
+  }
+  return merged;
+}
 // Main function to combine files and extract imports
 char *combine_files(char *file_path) {
   char *path = strdup(file_path); // Create a copy of the original file_path
@@ -271,40 +347,34 @@ char *combine_files(char *file_path) {
   if (start != NULL && is_import(file_contents, start)) {
     start += 6;
     start = skip_whitespace(start); // Corrected function name
-    printf("%s", start);
 
     switch (*start) {
     case '{': {
       char *c = malloc(strlen(start) + 1); // Corrected memory allocation
       strcpy(c, start);
       char *imports = grab_imports(c + 1);
-      printf("%s\n", imports);
 
       size_t length = 0;
       char delimiter[] = ",";
       char *comma = ",";
-      // Assuming split_string allocates memory for each element in the array
+      // Assuming split_string allocates memory for each element in the
+      // array
       char **import_list = split_string(imports, delimiter, &length);
-
-      printf("Array Size: %zu\n", length);
-      for (size_t i = 0; i < length; ++i) {
-        printf("%zu: %s\n", i, import_list[i]);
-      }
 
       Imports im;
       init_imports(&im);
-      print_imports(&im);
       write_import(&im, get_abs_file_path(remove_suffix(path, ".salmon")),
                    get_content(file_path));
+      while (!get_all_imports(&im))
+        ;
+      printf("Old:\n");
       print_imports(&im);
-      for (size_t i = 0; i < length; ++i) {
-        printf("%zu\n", i);
-        char *current_import = get_abs_file_path(import_list[i]);
-        write_import(&im, current_import, get_content(current_import));
-      }
+      printf("\nSorted:\n");
+      sort_contents(&im);
       print_imports(&im);
+      char *result = merge_imports(&im);
       free_imports(&im);
-
+      return result;
       // Free allocated memory
       free(c);
       break;
