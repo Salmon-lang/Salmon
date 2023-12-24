@@ -3,5 +3,5 @@ import {
 }
 
 function main(args) {
-  _print("Hello World!");
+  hello_world();
 }
