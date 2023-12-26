@@ -1,7 +1,7 @@
 #include "scanner.h"
+#include "common.h"
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <string.h>
 
 typedef struct Scanner {
@@ -69,20 +69,6 @@ static Token error_token(const char *message) {
   return token;
 }
 
-static void skip_comment() {
-  advance();
-  printf("%c", scanner.start[0]);
-  size_t n = 1;
-  while (n > 0) {
-    if (peek() == '/' && peek_next() == '*') {
-      n++;
-    } else if (peek() == '*' && peek_next() == '/') {
-      n--;
-    }
-    advance();
-  }
-}
-
 static void skip_whitespace() {
   for (;;) {
     char c = peek();
@@ -101,8 +87,6 @@ static void skip_whitespace() {
         while (peek() != '\n' && !is_at_end()) {
           advance();
         }
-      } else if (peek_next() == '*') {
-        skip_comment();
       } else {
         return;
       }
@@ -124,6 +108,8 @@ static TokenType check_keyword(size_t start, size_t length, const char *rest,
 
 static TokenType identifier_type() {
   switch (scanner.start[0]) {
+  case 'a':
+    return check_keyword(1, 2, "nd", TOKEN_AND);
   case 'c':
     return check_keyword(1, 4, "lass", TOKEN_CLASS);
   case 'e':
@@ -132,6 +118,10 @@ static TokenType identifier_type() {
     return check_keyword(1, 1, "f", TOKEN_IF);
   case 'n':
     return check_keyword(1, 2, "il", TOKEN_NIL);
+  case 'o':
+    return check_keyword(1, 1, "r", TOKEN_OR);
+  case 'p':
+    return check_keyword(1, 4, "rint", TOKEN_PRINT);
   case 'r':
     return check_keyword(1, 5, "eturn", TOKEN_RETURN);
   case 's':
@@ -148,7 +138,7 @@ static TokenType identifier_type() {
       case 'o':
         return check_keyword(2, 1, "r", TOKEN_FOR);
       case 'u':
-        return check_keyword(2, 1, "nction", TOKEN_FUN);
+        return check_keyword(2, 1, "n", TOKEN_FUN);
       }
     }
     break;
@@ -229,36 +219,24 @@ Token scan_token() {
     return make_token(TOKEN_LEFT_BRACE);
   case '}':
     return make_token(TOKEN_RIGHT_BRACE);
-  case '[':
-    return make_token(TOKEN_LEFT_BRACKET);
-  case ']':
-    return make_token(TOKENT_RIGHT_BRACKET);
   case ';':
     return make_token(TOKEN_SEMICOLON);
   case ',':
     return make_token(TOKEN_COMMA);
   case '.':
     return make_token(TOKEN_DOT);
-  case '|':
-    return make_token(TOKEN_OR);
-  case '&':
-    return make_token(TOKEN_AND);
-  case ':': {
-    if (match('=')) {
-      return make_token(TOKEN_EQUAL);
-    }
-    return error_token("Unexpected character");
-  }
   case '+':
-    return make_token(match('=') ? TOKEN_PLUS_EQUAL : TOKEN_PLUS);
+    return make_token(TOKEN_PLUS);
   case '-':
-    return make_token(match('=') ? TOKEN_MINUS_EQUAL : TOKEN_MINUS);
+    return make_token(TOKEN_MINUS);
   case '*':
-    return make_token(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR);
+    return make_token(TOKEN_STAR);
   case '/':
-    return make_token(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH);
+    return make_token(TOKEN_SLASH);
   case '!':
     return make_token(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+  case '=':
+    return make_token(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
   case '<':
     return make_token(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
   case '>':
