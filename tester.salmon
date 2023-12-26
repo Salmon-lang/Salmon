@@ -1,6 +1,9 @@
-import {
-  test
+function print(contents) {
+  _print(contents);
 }
-function hello_world() {
-  _print("Hello world");
+
+function println(contents) {
+  _print(contents);
+  _print("
+");
 }

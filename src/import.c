@@ -20,6 +20,7 @@ typedef struct {
   size_t capacity;
   bool *is_imported;
   size_t *import_count;
+  size_t *num_imports;
   char **contents;
   char **imports;
 } Imports;
@@ -31,6 +32,7 @@ static void init_imports(Imports *imports) {
   imports->import_count = NULL;
   imports->contents = NULL;
   imports->imports = NULL;
+  imports->num_imports = NULL;
 }
 
 static void free_imports(Imports *imports) {
@@ -38,6 +40,7 @@ static void free_imports(Imports *imports) {
   FREE_ARRAY(size_t, imports->import_count, imports->capacity);
   FREE_ARRAY(char *, imports->imports, imports->capacity);
   FREE_ARRAY(char *, imports->contents, imports->capacity);
+  FREE_ARRAY(size_t, imports->num_imports, imports->capacity);
   init_imports(imports);
 }
 
@@ -59,6 +62,8 @@ static size_t get_index_of_import(char **imports, size_t length, char *import) {
   return 0;
 }
 
+static size_t get_import_length(char *path);
+
 static void write_import(Imports *imports, char *import, char *contents) {
   for (size_t i = 0; i < imports->length; ++i) {
     if (strcmp(imports->imports[i], import) == 0) {
@@ -77,11 +82,14 @@ static void write_import(Imports *imports, char *import, char *contents) {
         GROW_ARRAY(char *, imports->contents, old_capacity, imports->capacity);
     imports->is_imported =
         GROW_ARRAY(bool, imports->is_imported, old_capacity, imports->capacity);
+    imports->num_imports = GROW_ARRAY(size_t, imports->num_imports,
+                                      old_capacity, imports->capacity);
   }
   imports->is_imported[imports->length] = false;
   imports->imports[imports->length] = strdup(import);
   imports->import_count[imports->length] = 1;
   imports->contents[imports->length] = strdup(contents);
+  imports->num_imports[imports->length] = get_import_length(import);
   imports->length++;
 }
 
@@ -108,6 +116,7 @@ static char *read_file(const char *file_path) {
   fclose(file);
   return buffer;
 }
+
 // Utility functions for character handling
 static char peek(const char *start) { return *start; }
 
@@ -235,8 +244,8 @@ char **split_string(const char *input, const char *delimiter,
 
 static void print_imports(Imports *imports) {
   for (size_t i = 0; i < imports->length; ++i) {
-    printf("%s: %zu, %s\n", imports->imports[i], imports->import_count[i],
-           imports->contents[i]);
+    printf("%s: %zu, %zu, %s\n", imports->imports[i], imports->import_count[i],
+           imports->num_imports[i], imports->contents[i]);
   }
 }
 
@@ -249,6 +258,40 @@ static char *remove_suffix(char *str, const char *suffix) {
     str[str_length - suffix_length] = '\0';
   }
   return str;
+}
+
+static size_t get_import_length(char *path) {
+  char *contents = read_file(path);
+
+  const char *start = strchr(contents, 'i');
+
+  if (start != NULL && is_import(contents, start)) {
+    start += 6;
+    start = skip_whitespace(start); // Corrected function name
+
+    switch (*start) {
+    case '{': {
+      char *c = malloc(strlen(start) + 1); // Corrected memory allocation
+      strcpy(c, start);
+      char *imports = grab_imports(c + 1);
+
+      size_t length = 0;
+      char delimiter[] = ",";
+      char *comma = ",";
+      // Assuming split_string allocates memory for each element in the
+      // array
+      char **import_list = split_string(imports, delimiter, &length);
+      free(import_list);
+      free(c);
+      return length;
+    }
+    default:
+      printf("Import must have a body.\n");
+      free(path); // Free the allocated path before returning
+      return 0;
+    }
+  }
+  return 0;
 }
 
 static char *get_content(char *file_path) {
@@ -308,15 +351,18 @@ static void sort_contents(Imports *imports) {
   for (size_t i = 0; i < imports->length - 1; ++i) {
     for (size_t j = i; j < imports->length - 1; ++j) {
       if (imports->import_count[j] > imports->import_count[j + 1]) {
-        size_t k = imports->import_count[j];
+        size_t k = imports->num_imports[j];
+        size_t cnt = imports->import_count[j];
         char *con = imports->contents[j];
         char *import = imports->imports[j];
 
+        imports->num_imports[j] = imports->import_count[j + 1];
         imports->import_count[j] = imports->import_count[j + 1];
         imports->contents[j] = imports->contents[j + 1];
         imports->imports[j] = imports->imports[j + 1];
 
-        imports->import_count[j + 1] = k;
+        imports->num_imports[j + 1] = k;
+        imports->import_count[j + 1] = cnt;
         imports->contents[j + 1] = con;
         imports->imports[j + 1] = import;
       }

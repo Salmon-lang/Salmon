@@ -1,7 +1,9 @@
 import {
   tester
 }
-
-function main(args) {
-  hello_world();
+var a := 0;
+if (a) {
+  println(true);
+} else {
+  println(false);
 }

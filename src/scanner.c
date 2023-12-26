@@ -1,7 +1,7 @@
 #include "scanner.h"
+#include "common.h"
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <string.h>
 
 typedef struct Scanner {
@@ -69,20 +69,6 @@ static Token error_token(const char *message) {
   return token;
 }
 
-static void skip_comment() {
-  advance();
-  printf("%c", scanner.start[0]);
-  size_t n = 1;
-  while (n > 0) {
-    if (peek() == '/' && peek_next() == '*') {
-      n++;
-    } else if (peek() == '*' && peek_next() == '/') {
-      n--;
-    }
-    advance();
-  }
-}
-
 static void skip_whitespace() {
   for (;;) {
     char c = peek();
@@ -101,8 +87,6 @@ static void skip_whitespace() {
         while (peek() != '\n' && !is_at_end()) {
           advance();
         }
-      } else if (peek_next() == '*') {
-        skip_comment();
       } else {
         return;
       }
@@ -148,7 +132,7 @@ static TokenType identifier_type() {
       case 'o':
         return check_keyword(2, 1, "r", TOKEN_FOR);
       case 'u':
-        return check_keyword(2, 1, "nction", TOKEN_FUN);
+        return check_keyword(2, 6, "nction", TOKEN_FUN);
       }
     }
     break;
@@ -229,26 +213,18 @@ Token scan_token() {
     return make_token(TOKEN_LEFT_BRACE);
   case '}':
     return make_token(TOKEN_RIGHT_BRACE);
-  case '[':
-    return make_token(TOKEN_LEFT_BRACKET);
-  case ']':
-    return make_token(TOKENT_RIGHT_BRACKET);
   case ';':
     return make_token(TOKEN_SEMICOLON);
   case ',':
     return make_token(TOKEN_COMMA);
   case '.':
     return make_token(TOKEN_DOT);
+  case '=':
+    return make_token(TOKEN_EQUAL_EQUAL);
   case '|':
     return make_token(TOKEN_OR);
   case '&':
     return make_token(TOKEN_AND);
-  case ':': {
-    if (match('=')) {
-      return make_token(TOKEN_EQUAL);
-    }
-    return error_token("Unexpected character");
-  }
   case '+':
     return make_token(match('=') ? TOKEN_PLUS_EQUAL : TOKEN_PLUS);
   case '-':
@@ -257,6 +233,12 @@ Token scan_token() {
     return make_token(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR);
   case '/':
     return make_token(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH);
+  case ':': {
+    if (match('=')) {
+      return make_token(TOKEN_EQUAL);
+    }
+    break;
+  }
   case '!':
     return make_token(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
   case '<':
