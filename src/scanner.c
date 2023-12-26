@@ -108,8 +108,6 @@ static TokenType check_keyword(size_t start, size_t length, const char *rest,
 
 static TokenType identifier_type() {
   switch (scanner.start[0]) {
-  case 'a':
-    return check_keyword(1, 2, "nd", TOKEN_AND);
   case 'c':
     return check_keyword(1, 4, "lass", TOKEN_CLASS);
   case 'e':
@@ -118,8 +116,6 @@ static TokenType identifier_type() {
     return check_keyword(1, 1, "f", TOKEN_IF);
   case 'n':
     return check_keyword(1, 2, "il", TOKEN_NIL);
-  case 'o':
-    return check_keyword(1, 1, "r", TOKEN_OR);
   case 'p':
     return check_keyword(1, 4, "rint", TOKEN_PRINT);
   case 'r':
@@ -138,7 +134,7 @@ static TokenType identifier_type() {
       case 'o':
         return check_keyword(2, 1, "r", TOKEN_FOR);
       case 'u':
-        return check_keyword(2, 1, "n", TOKEN_FUN);
+        return check_keyword(2, 6, "nction", TOKEN_FUN);
       }
     }
     break;
@@ -233,10 +229,20 @@ Token scan_token() {
     return make_token(TOKEN_STAR);
   case '/':
     return make_token(TOKEN_SLASH);
+  case '=':
+    return make_token(TOKEN_EQUAL_EQUAL);
+  case '|':
+    return make_token(TOKEN_OR);
+  case '&':
+    return make_token(TOKEN_AND);
+  case ':': {
+    if (match('=')) {
+      return make_token(TOKEN_EQUAL);
+    }
+    break;
+  }
   case '!':
     return make_token(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
-  case '=':
-    return make_token(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
   case '<':
     return make_token(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
   case '>':
