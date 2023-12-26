@@ -1,6 +1,3 @@
-import {
-  test
-}
 fun hello_world() {
   print("Hello world");
 }

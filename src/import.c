@@ -244,8 +244,8 @@ char **split_string(const char *input, const char *delimiter,
 
 static void print_imports(Imports *imports) {
   for (size_t i = 0; i < imports->length; ++i) {
-    printf("%s: %zu, %s\n", imports->imports[i], imports->import_count[i],
-           imports->contents[i]);
+    printf("%s: %zu, %zu, %s\n", imports->imports[i], imports->import_count[i],
+           imports->num_imports[i], imports->contents[i]);
   }
 }
 
@@ -350,7 +350,7 @@ static bool get_all_imports(Imports *imports) {
 static void sort_contents(Imports *imports) {
   for (size_t i = 0; i < imports->length - 1; ++i) {
     for (size_t j = i; j < imports->length - 1; ++j) {
-      if (imports->num_imports[j] > imports->num_imports[j + 1]) {
+      if (imports->import_count[j] < imports->import_count[j + 1]) {
         size_t k = imports->num_imports[j];
         size_t cnt = imports->import_count[j];
         char *con = imports->contents[j];
