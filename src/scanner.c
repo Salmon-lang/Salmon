@@ -116,8 +116,6 @@ static TokenType identifier_type() {
     return check_keyword(1, 1, "f", TOKEN_IF);
   case 'n':
     return check_keyword(1, 2, "il", TOKEN_NIL);
-  case 'p':
-    return check_keyword(1, 4, "rint", TOKEN_PRINT);
   case 'r':
     return check_keyword(1, 5, "eturn", TOKEN_RETURN);
   case 's':
@@ -221,20 +219,20 @@ Token scan_token() {
     return make_token(TOKEN_COMMA);
   case '.':
     return make_token(TOKEN_DOT);
-  case '+':
-    return make_token(TOKEN_PLUS);
-  case '-':
-    return make_token(TOKEN_MINUS);
-  case '*':
-    return make_token(TOKEN_STAR);
-  case '/':
-    return make_token(TOKEN_SLASH);
   case '=':
     return make_token(TOKEN_EQUAL_EQUAL);
   case '|':
     return make_token(TOKEN_OR);
   case '&':
     return make_token(TOKEN_AND);
+  case '+':
+    return make_token(match('=') ? TOKEN_PLUS_EQUAL : TOKEN_PLUS);
+  case '-':
+    return make_token(match('=') ? TOKEN_MINUS_EQUAL : TOKEN_MINUS);
+  case '*':
+    return make_token(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR);
+  case '/':
+    return make_token(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH);
   case ':': {
     if (match('=')) {
       return make_token(TOKEN_EQUAL);

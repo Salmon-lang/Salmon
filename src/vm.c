@@ -20,6 +20,11 @@ static Value clock_native(size_t arg_count, Value *args) {
   return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
 
+static Value print_native(size_t arg_count, Value *args) {
+  print_value(args[0]);
+  return NIL_VAL;
+}
+
 static void reset_stack() {
   vm.stack_top = vm.stack;
   vm.frame_count = 0;
@@ -70,7 +75,8 @@ void init_VM() {
   vm.init_string = NULL;
   vm.init_string = copy_string("init", 4);
 
-  define_native("clock", clock_native);
+  define_native("_clock", clock_native);
+  define_native("_print", print_native);
 }
 
 void free_VM() {
@@ -220,7 +226,8 @@ static void define_method(ObjString *name) {
 }
 
 static bool is_falsey(Value value) {
-  return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+  return IS_NIL(value) || (IS_NUMBER(value) && AS_NUMBER(value) == 0.0) ||
+         (IS_BOOL(value) && !AS_BOOL(value));
 }
 
 static void concatonate() {
@@ -235,6 +242,22 @@ static void concatonate() {
   pop();
   pop();
   push(OBJ_VAL(result));
+}
+
+static ObjString *get_as_string(Value val) {
+  if (IS_NIL(val)) {
+    return take_string("nil", 4);
+  } else if (IS_NUMBER(val)) {
+    char *chars = ALLOCATE(char, 65);
+    sprintf(chars, "%f", AS_NUMBER(val));
+    return take_string(chars, 65);
+  } else if (IS_BOOL(val)) {
+    if (AS_BOOL(val)) {
+      return take_string("true", 5);
+    }
+    return take_string("false", 6);
+  } else
+    return NULL;
 }
 
 static InterpretResult run() {
@@ -410,11 +433,6 @@ static InterpretResult run() {
       }
       push(NUMBER_VAL(-AS_NUMBER(pop())));
       break;
-    case OP_PRINT: {
-      print_value(pop());
-      printf("\n");
-      break;
-    }
     case OP_JUMP: {
       uint16_t offset = READ_SHORT();
       frame->ip += offset;

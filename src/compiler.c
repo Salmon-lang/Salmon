@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "memory.h"
 #include "scanner.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -508,6 +509,26 @@ static void named_variable(Token name, bool can_assign) {
   if (can_assign && match(TOKEN_EQUAL)) {
     expression();
     emit_bytes(set_op, (uint8_t)arg);
+  } else if (can_assign && match(TOKEN_PLUS_EQUAL)) {
+    emit_bytes(get_op, (uint8_t)arg);
+    expression();
+    emit_byte(OP_ADD);
+    emit_bytes(set_op, (uint8_t)arg);
+  } else if (can_assign && match(TOKEN_MINUS_EQUAL)) {
+    emit_bytes(get_op, (uint8_t)arg);
+    expression();
+    emit_byte(OP_SUBTRACT);
+    emit_bytes(set_op, (uint8_t)arg);
+  } else if (can_assign && match(TOKEN_STAR_EQUAL)) {
+    emit_bytes(get_op, (uint8_t)arg);
+    expression();
+    emit_byte(OP_MULTIPLY);
+    emit_bytes(set_op, (uint8_t)arg);
+  } else if (can_assign && match(TOKEN_SLASH_EQUAL)) {
+    emit_bytes(get_op, (uint8_t)arg);
+    expression();
+    emit_byte(OP_DIVIDE);
+    emit_bytes(set_op, (uint8_t)arg);
   } else {
     emit_bytes(get_op, (uint8_t)arg);
   }
@@ -583,6 +604,8 @@ ParseRule rules[] = {
     [TOKEN_BANG] = {unary, NULL, PREC_NONE},
     [TOKEN_BANG_EQUAL] = {NULL, binary, PREC_EQUALITY},
     [TOKEN_EQUAL] = {NULL, NULL, PREC_NONE},
+    [TOKEN_PLUS_EQUAL] = {NULL, NULL, PREC_NONE},
+    [TOKEN_MINUS_EQUAL] = {NULL, NULL, PREC_NONE},
     [TOKEN_EQUAL_EQUAL] = {NULL, binary, PREC_EQUALITY},
     [TOKEN_GREATER] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_GREATER_EQUAL] = {NULL, binary, PREC_COMPARISON},
@@ -600,7 +623,6 @@ ParseRule rules[] = {
     [TOKEN_IF] = {NULL, NULL, PREC_NONE},
     [TOKEN_NIL] = {literal, NULL, PREC_NONE},
     [TOKEN_OR] = {NULL, or_, PREC_OR},
-    [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {super, NULL, PREC_NONE},
     [TOKEN_THIS] = {this, NULL, PREC_NONE},
@@ -797,12 +819,6 @@ static void if_statement() {
   patch_jump(else_jump);
 }
 
-static void print_statement() {
-  expression();
-  consume(TOKEN_SEMICOLON, "Expect ';' after value.");
-  emit_byte(OP_PRINT);
-}
-
 static void return_statement() {
   if (current->type == TYPE_SCRIPT) {
     error("Can't return from top-level code.");
@@ -845,7 +861,6 @@ static void synchronize() {
     case TOKEN_VAR:
     case TOKEN_IF:
     case TOKEN_WHILE:
-    case TOKEN_PRINT:
     case TOKEN_RETURN:
       return;
     default:;
@@ -870,9 +885,7 @@ static void declaration() {
 }
 
 static void statement() {
-  if (match(TOKEN_PRINT)) {
-    print_statement();
-  } else if (match(TOKEN_FOR)) {
+  if (match(TOKEN_FOR)) {
     for_statement();
   } else if (match(TOKEN_WHILE)) {
     while_statement();

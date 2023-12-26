@@ -1,5 +1,9 @@
+function print(contents) {
+  _print(contents);
+}
 
-function hello_world() {
-  var a := 2;
-  print(2 & a = 2);
+function println(contents) {
+  _print(contents);
+  _print("
+");
 }
