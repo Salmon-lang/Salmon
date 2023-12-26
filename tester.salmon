@@ -1,6 +1,6 @@
 import {
   test
 }
-function hello_world() {
-  _print("Hello world");
+fun hello_world() {
+  print("Hello world");
 }

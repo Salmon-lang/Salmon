@@ -1,7 +1,4 @@
 import {
   tester
 }
-
-function main(args) {
-  hello_world();
-}
+hello_world();

@@ -1,6 +1,7 @@
 #include "chunk.h"
 #include "common.h"
 #include "debug.h"
+#include "import.h"
 #include "value.h"
 #include "vm.h"
 #include <stddef.h>
@@ -31,8 +32,9 @@ static char *read_file(const char *path) {
   return buffer;
 }
 
-static void run_file(const char *path) {
-  char *source = read_file(path);
+static void run_file(char *path) {
+  char *source = combine_files(path);
+  printf("%s\n", source);
   InterpretResult result = interpret(source);
   free(source);
 
