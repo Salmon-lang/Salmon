@@ -1,9 +1,0 @@
-import {
-  tester
-}
-var a := 0;
-if (a) {
-  println(true);
-} else {
-  println(false);
-}
