@@ -1,8 +1,5 @@
-#include "chunk.h"
 #include "common.h"
-#include "debug.h"
 #include "import.h"
-#include "value.h"
 #include "vm.h"
 #include <stddef.h>
 #include <stdio.h>
