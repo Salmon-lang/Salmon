@@ -1,5 +1,4 @@
 #include "scanner.h"
-#include "common.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>

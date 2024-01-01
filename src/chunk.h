@@ -46,7 +46,7 @@ typedef struct Chunk {
   size_t capacity;
   uint8_t *code;
   size_t *lines;
-  Value_Array constants;
+  ValueArray constants;
 } Chunk;
 
 void init_chunk(Chunk *chunk);

@@ -7,7 +7,7 @@ if(CCACHE_PROGRAM)
 endif()
 # Export compilation database in JSON format.
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
 project(CLox C)

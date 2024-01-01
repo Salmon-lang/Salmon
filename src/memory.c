@@ -114,7 +114,7 @@ void mark_value(Value value) {
   }
 }
 
-static void mark_array(Value_Array *array) {
+static void mark_array(ValueArray *array) {
   for (size_t i = 0; i < array->count; ++i) {
     mark_value(array->value[i]);
   }
