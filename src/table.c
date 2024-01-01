@@ -1,6 +1,5 @@
 #include "table.h"
 #include "memory.h"
-#include "object.h"
 #include "value.h"
 #include <stddef.h>
 #include <stdint.h>

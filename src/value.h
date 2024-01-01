@@ -18,7 +18,7 @@ typedef uint64_t Value;
 
 #define IS_BOOL(value) ((value | 1) == TRUE_VAL)
 #define IS_NIL(value) ((value) == NIL_VAL)
-#define IS_NUMBER(value) (((value)&QNAN) != QNAN)
+#define IS_NUMBER(value) (((value) & QNAN) != QNAN)
 #define IS_OBJ(value) (((value) & (QNAN | SIGN_BIT)) == (QNAN | SIGN_BIT))
 
 #define AS_BOOL(value) ((value) == TRUE_VAL)
@@ -72,14 +72,14 @@ typedef struct Value {
 #define OBJ_VAL(object) ((Value){VAL_OBJ, {.obj = (Obj *)object}})
 #endif
 
-typedef struct Value_Array {
+typedef struct {
   size_t capacity;
   size_t count;
   Value *value;
-} Value_Array;
+} ValueArray;
 
 bool values_equal(Value a, Value b);
-void init_value_array(Value_Array *arr);
-void write_value_array(Value_Array *arr, Value val);
-void free_value_array(Value_Array *arr);
+void init_value_array(ValueArray *arr);
+void write_value_array(ValueArray *arr, Value val);
+void free_value_array(ValueArray *arr);
 void print_value(Value value);
