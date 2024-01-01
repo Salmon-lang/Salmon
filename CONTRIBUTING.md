@@ -45,13 +45,13 @@ git add "your file(s)"
 > replace "your file(s)" with the path to the file(s) changed
 5. commit the changes
 ```bash
-git commit "'done' ['something']"
+git commit -m "'done' ['something']"
 ```
 > replace 'done' with either added, implemented, or something else  
 replace 'something' with a feature
 6. push changes to forked repo
 ```bash
-git push origin development
+git push -u origin development
 ```
 7. if you are fixing a bug, create an issue report in the Salmon repo
 
