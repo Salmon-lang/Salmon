@@ -30,6 +30,7 @@ typedef enum TokenType {
   TOKEN_SLASH_EQUAL,
 
   TOKEN_IDENTIFIER,
+  TOKEN_FILE_PATH,
   TOKEN_STRING,
   TOKEN_NUMBER,
 
@@ -49,6 +50,7 @@ typedef enum TokenType {
   TOKEN_VAR,
   TOKEN_WHILE,
 
+  TOKEN_PATH,
   TOKEN_ERROR,
   TOKEN_EOF
 } TokenType;

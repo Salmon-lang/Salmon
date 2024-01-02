@@ -42,7 +42,7 @@ static void runtime_error(const char *format, ...) {
     CallFrame *frame = &vm.frames[i];
     ObjFunction *function = frame->closure->function;
     size_t instruction = frame->ip - function->chunk.code - 1;
-    fprintf(stderr, "[line %zu] in ", function->chunk.lines[instruction]);
+    fprintf(stderr, "[file %s, line %zu] in ", vm.path, function->chunk.lines[instruction]);
     if (function->name == NULL) {
       fprintf(stderr, "script\n");
     } else {
@@ -294,6 +294,14 @@ static InterpretResult run() {
 #endif /* ifdef DEBUG_TRACE_EXECUTION */
     uint8_t instruction;
     switch (instruction = READ_BYTE()) {
+    case OP_PATH: {
+                    if (IS_STRING(peek(0))) {
+                      ObjString *path = AS_STRING(pop());
+                      printf("%s\n", path->chars);
+                      vm.path = path->chars;
+                    }
+      break;
+    }
     case OP_NIL:
       push(NIL_VAL);
       break;

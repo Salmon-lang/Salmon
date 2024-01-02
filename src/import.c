@@ -39,7 +39,7 @@ static void init_imports(Imports *imports) {
 }
 
 /// Free the memory allocated for the Imports structure.
-static void free_imports(Imports *imports) {
+void free_imports(Imports *imports) {
   FREE_ARRAY(bool, imports->is_imported, imports->capacity);
   FREE_ARRAY(size_t, imports->import_count, imports->capacity);
   FREE_ARRAY(char *, imports->imports, imports->capacity);
@@ -367,19 +367,27 @@ static void sort_contents(Imports *imports) {
     for (size_t j = i; j < imports->length - 1; ++j) {
       if (imports->import_count[j] > imports->import_count[j + 1]) {
         size_t cnt = imports->import_count[j];
+        char *contents = imports->contents[j], *path = imports->imports[j];
 
         imports->import_count[j] = imports->import_count[j + 1];
+        imports->contents[j] = imports->contents[j + 1];
+        imports->imports[j] = imports->imports[j + 1];
 
         imports->import_count[j + 1] = cnt;
+        imports->contents[j + 1] = contents;
+        imports->imports[j] = path;
       }
     }
   }
 }
 
-/// Get the total length of contents in the Imports structure.
+/// Get the total length of contents and path names in the Imports structure.
 static size_t get_length(Imports *imports) {
   size_t length = 0;
   for (size_t i = 0; i < imports->length; ++i) {
+    length += strlen("____path____ ~");
+    length += strlen(imports->imports[i]);
+    length += strlen("\n");
     length += strlen(imports->contents[i]);
   }
   return length;
@@ -390,6 +398,9 @@ static char *merge_imports(Imports *imports) {
   size_t length = get_length(imports);
   char *merged = calloc(length + 1, 1);
   for (ssize_t i = imports->length - 1; i >= 0; --i) {
+    merged = strcat(merged, "____path____ ~");
+    merged = strcat(merged, imports->imports[i]);
+    merged = strcat(merged, "\n");
     merged = strcat(merged, imports->contents[i]);
   }
   return merged;
