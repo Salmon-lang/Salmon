@@ -4,6 +4,7 @@
 
 typedef enum Op_Code {
   OP_CONSTANT,
+  OP_PATH,
   OP_NIL,
   OP_TRUE,
   OP_FALSE,

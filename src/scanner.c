@@ -68,6 +68,19 @@ static Token error_token(const char *message) {
   return token;
 }
 
+static bool is_whitespace() {
+  char c = peek();
+  switch (c) {
+    case ' ':
+    case '\t':
+    case '\n':
+    case '\r':
+      return true;
+    default:
+      return false;
+  }
+}
+
 static void skip_whitespace() {
   for (;;) {
     char c = peek();
@@ -123,6 +136,8 @@ static TokenType identifier_type() {
     return check_keyword(1, 2, "ar", TOKEN_VAR);
   case 'w':
     return check_keyword(1, 4, "hile", TOKEN_WHILE);
+  case '_':
+    return check_keyword(1, 11, "___path____", TOKEN_PATH);
   case 'f':
     if (scanner.current - scanner.start > 1) {
       switch (scanner.start[1]) {
@@ -171,6 +186,13 @@ static Token number() {
   return make_token(TOKEN_NUMBER);
 }
 
+static Token file_path() {
+  while (!is_whitespace() && !is_at_end()) {
+    advance();
+  }
+  return make_token(TOKEN_FILE_PATH);
+}
+
 static Token string() {
   while (peek() != '"' && !is_at_end()) {
     if (peek() == '\n') {
@@ -199,7 +221,7 @@ Token scan_token() {
   if (is_digit(c)) {
     return number();
   }
-  if (is_alpha(c)) {
+  if (is_alpha(c) || c == '#') {
     return identifier();
   }
 
@@ -232,6 +254,16 @@ Token scan_token() {
     return make_token(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR);
   case '/':
     return make_token(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH);
+#ifdef __unix__
+  case '~':
+    return file_path();
+#else
+  case 'C':
+    if (match(':')) {
+      return file_path();
+    }
+    break;
+#endif /* ifdef __UNIX__ */
   case ':': {
     if (match('=')) {
       return make_token(TOKEN_EQUAL);

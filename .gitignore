@@ -51,5 +51,10 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# cmake output
-bld/
+*
+!src/
+!CMakeLists.txt
+!README.md
+!CONTRIBUTING.md
+!LICENSE
+!.gitignore
