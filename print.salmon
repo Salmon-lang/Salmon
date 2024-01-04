@@ -1,9 +1,0 @@
-function print(contents) {
-  _print(contents);
-}
-
-function println(contents) {
-  _print(contents);
-  _print("
-");
-}
