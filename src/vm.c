@@ -1,7 +1,6 @@
 #include "vm.h"
 #include "chunk.h"
 #include "compiler.h"
-#include "debug.h"
 #include "memory.h"
 #include "object.h"
 #include "table.h"
@@ -11,6 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -407,28 +407,53 @@ static InterpretResult run() {
       break;
     }
     case OP_GET_ELEMENT: {
-      if (!IS_ARRAY(peek(1))) {
-        runtime_error("Can not access element of a non array.");
+      if (!IS_ARRAY(peek(1)) && !IS_STRING(peek(1))) {
+        runtime_error("Can not access element of a non array/string.");
       }
-      ObjArray *array = AS_ARRAY(peek(1));
-      if (!IS_NUMBER(peek(0))) {
-        runtime_error("Index must be a number.");
-      }
-      Value index = peek(0);
-      Value value;
-      int i = (int)(AS_NUMBER(index));
-      if (i < array->values.count && i >= 0) {
-        pop();
-        pop();
-        value = array->values.value[i];
-        push(value);
+      if (IS_ARRAY(peek(1))) {
+        ObjArray *array = AS_ARRAY(peek(1));
+        if (!IS_NUMBER(peek(0))) {
+          runtime_error("Index must be a number.");
+        }
+        Value index = peek(0);
+        Value value;
+        int i = (int)(AS_NUMBER(index));
+        if (i < array->values.count && i >= 0) {
+          pop();
+          pop();
+          value = array->values.value[i];
+          push(value);
+          break;
+        }
+        runtime_error("Index of %d out of bounds for array of length %zu.", i,
+                      array->values.count);
+        break;
+      } else {
+        ObjString *string = AS_STRING(peek(1));
+        if (!IS_NUMBER(peek(0))) {
+          runtime_error("Index must be a number.");
+        }
+        Value index = peek(0);
+        int i = (int)(AS_NUMBER(index));
+        if (i < string->length && i >= 0) {
+          pop();
+          pop();
+          char *c = ALLOCATE(char, 2);
+          memcpy(c, string->chars + i, 1);
+          c[1] = '\0';
+          ObjString *result = take_string(c, 2);
+          push(OBJ_VAL(result));
+          break;
+        }
+        runtime_error("Index of %d out of bounds for array of length %zu.", i,
+                      string->length);
         break;
       }
       break;
     }
     case OP_SET_ELEMENT: {
       if (!IS_ARRAY(peek(2))) {
-        runtime_error("Can not access element of a non array.");
+        runtime_error("Can not set element of a non array.");
       }
       ObjArray *array = AS_ARRAY(peek(2));
       if (!IS_NUMBER(peek(1))) {
@@ -445,6 +470,8 @@ static InterpretResult run() {
         push(value);
         break;
       }
+      runtime_error("Index of %d out of bounds for array of length %zu.", i,
+                    array->values.count);
       break;
     }
     case OP_EQUAL: {
@@ -466,9 +493,9 @@ static InterpretResult run() {
         double b = AS_NUMBER(pop());
         double a = AS_NUMBER(pop());
         push(NUMBER_VAL(a + b));
-      } else if(IS_ARRAY(peek(1))){
+      } else if (IS_ARRAY(peek(1))) {
         append();
-      }else {
+      } else {
         runtime_error("Operands must be either two strings or two numbers.");
         return INTERPRET_RUNTIME_ERROR;
       }
