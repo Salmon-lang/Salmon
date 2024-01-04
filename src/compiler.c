@@ -600,6 +600,19 @@ static void this(bool can_assign) {
   variable(false);
 }
 
+static void array_access(bool can_assign) {
+  expression();
+  consume(TOKEN_RIGHT_BRACKET, "expect ']' after expression.");
+}
+
+static void array_create(bool can_assign) {
+  printf("create array\n");
+  consume(TOKEN_RIGHT_BRACKET, "expect ']' following '[' to creat an array.");
+  printf("consume\n");
+  emit_constant(OBJ_VAL(new_array()));
+  printf("emmit\n");
+}
+
 static void unary(bool can_assign) {
   TokenType operator_type = parser.previous.type;
   parse_precedence(PREC_UNARY);
@@ -620,6 +633,8 @@ ParseRule rules[] = {
     [TOKEN_RIGHT_PAREN] = {NULL, NULL, PREC_NONE},
     [TOKEN_LEFT_BRACE] = {NULL, NULL, PREC_NONE},
     [TOKEN_RIGHT_BRACE] = {NULL, NULL, PREC_NONE},
+    [TOKEN_LEFT_BRACKET] = {array_create, array_access, PREC_CALL},
+    [TOKEN_RIGHT_BRACKET] = {NULL, NULL, PREC_NONE},
     [TOKEN_COMMA] = {NULL, NULL, PREC_NONE},
     [TOKEN_DOT] = {NULL, dot, PREC_CALL},
     [TOKEN_MINUS] = {unary, binary, PREC_TERM},
@@ -700,7 +715,6 @@ static void function(FunctionType type) {
   emit_constant(OBJ_VAL(copy_string(parser.path, strlen(parser.path))));
   emit_byte(OP_PATH);
 
-  
   consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
   if (!check(TOKEN_RIGHT_PAREN)) {
     do {
@@ -880,7 +894,6 @@ static void while_statement() {
 }
 
 static void path_statement() {
-
   consume(TOKEN_FILE_PATH, "Expect path name.");
   parser.last_line = parser.previous.line;
   parser.path = substr(parser.previous.start, parser.previous.length);
