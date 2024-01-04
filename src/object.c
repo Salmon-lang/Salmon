@@ -74,6 +74,12 @@ ObjNative *new_native(NativeFn function) {
   return native;
 }
 
+ObjArray *new_array() {
+  ObjArray *array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
+  init_value_array(&array->values);
+  return array;
+}
+
 static ObjString *allocate_string(char *chars, size_t length, uint32_t hash) {
   ObjString *string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
   string->length = length;
@@ -132,8 +138,22 @@ static void print_function(ObjFunction *function) {
   printf("<fn %s>", function->name->chars);
 }
 
+static void print_array(ObjArray *array) {
+  printf("[");
+  for (size_t i = 0; i < array->values.count; ++i) {
+    print_value(array->values.value[i]);
+    if (i < array->values.count - 1) {
+      printf(", ");
+    }
+  }
+  printf("]");
+}
+
 void print_object(Value value) {
   switch (OBJ_TYPE(value)) {
+  case OBJ_ARRAY:
+    print_array(AS_ARRAY(value));
+    break;
   case OBJ_BOUND_METHOD:
     print_function(AS_BOUND_METHOD(value)->method->function);
     break;

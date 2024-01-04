@@ -71,13 +71,13 @@ static Token error_token(const char *message) {
 static bool is_whitespace() {
   char c = peek();
   switch (c) {
-    case ' ':
-    case '\t':
-    case '\n':
-    case '\r':
-      return true;
-    default:
-      return false;
+  case ' ':
+  case '\t':
+  case '\n':
+  case '\r':
+    return true;
+  default:
+    return false;
   }
 }
 
@@ -234,6 +234,10 @@ Token scan_token() {
     return make_token(TOKEN_LEFT_BRACE);
   case '}':
     return make_token(TOKEN_RIGHT_BRACE);
+  case '[':
+    return make_token(TOKEN_LEFT_BRACKET);
+  case ']':
+    return make_token(TOKEN_RIGHT_BRACKET);
   case ';':
     return make_token(TOKEN_SEMICOLON);
   case ',':
