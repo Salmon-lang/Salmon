@@ -603,6 +603,12 @@ static void this(bool can_assign) {
 static void array_access(bool can_assign) {
   expression();
   consume(TOKEN_RIGHT_BRACKET, "expect ']' after expression.");
+  if (can_assign && match(TOKEN_EQUAL)) {
+    expression();
+    emit_byte(OP_SET_ELEMENT);
+  } else {
+    emit_byte(OP_GET_ELEMENT);
+  }
 }
 
 static void array_create(bool can_assign) {

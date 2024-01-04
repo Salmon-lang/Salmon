@@ -231,6 +231,15 @@ static bool is_falsey(Value value) {
          (IS_BOOL(value) && !AS_BOOL(value));
 }
 
+static void append() {
+  ObjArray *array = AS_ARRAY(peek(1));
+  Value val = peek(0);
+  write_value_array(&array->values, val);
+  pop();
+  pop();
+  push(OBJ_VAL(array));
+}
+
 static void concatonate() {
   ObjString *b = AS_STRING(peek(0));
   ObjString *a = AS_STRING(peek(1));
@@ -397,6 +406,47 @@ static InterpretResult run() {
       }
       break;
     }
+    case OP_GET_ELEMENT: {
+      if (!IS_ARRAY(peek(1))) {
+        runtime_error("Can not access element of a non array.");
+      }
+      ObjArray *array = AS_ARRAY(peek(1));
+      if (!IS_NUMBER(peek(0))) {
+        runtime_error("Index must be a number.");
+      }
+      Value index = peek(0);
+      Value value;
+      int i = (int)(AS_NUMBER(index));
+      if (i < array->values.count && i >= 0) {
+        pop();
+        pop();
+        value = array->values.value[i];
+        push(value);
+        break;
+      }
+      break;
+    }
+    case OP_SET_ELEMENT: {
+      if (!IS_ARRAY(peek(2))) {
+        runtime_error("Can not access element of a non array.");
+      }
+      ObjArray *array = AS_ARRAY(peek(2));
+      if (!IS_NUMBER(peek(1))) {
+        runtime_error("Index must be a number.");
+      }
+      Value index = peek(1);
+      int i = (int)(AS_NUMBER(index));
+      if (i < array->values.count && i >= 0) {
+        Value value;
+        value = pop();
+        pop();
+        pop();
+        array->values.value[i] = value;
+        push(value);
+        break;
+      }
+      break;
+    }
     case OP_EQUAL: {
       Value b = pop();
       Value a = pop();
@@ -416,7 +466,9 @@ static InterpretResult run() {
         double b = AS_NUMBER(pop());
         double a = AS_NUMBER(pop());
         push(NUMBER_VAL(a + b));
-      } else {
+      } else if(IS_ARRAY(peek(1))){
+        append();
+      }else {
         runtime_error("Operands must be either two strings or two numbers.");
         return INTERPRET_RUNTIME_ERROR;
       }

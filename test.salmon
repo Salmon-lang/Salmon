@@ -6,9 +6,10 @@ function fib(n) {
   if (n < 2) return n;
   return fib(n - 2) + fib(n - 1);
 }
-[];
 var t := _clock();
-for(var i := 0; i < 30; i += 1) {
-  println(fib(i));
+var x := [];
+for (var i := 0; i < 20; i += 1) {
+  x += [];
 }
+println(x);
 println(_clock() - t);
