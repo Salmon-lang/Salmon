@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define ALLOCATE_OBJ(type, object_type)                                        \
@@ -80,10 +81,42 @@ ObjArray *new_array() {
   return array;
 }
 
-static ObjString *allocate_string(char *chars, size_t length, uint32_t hash) {
+static char *format(char *chars) {
+  size_t max_length = strlen(chars);
+  char *formated = malloc(max_length + 1);
+  for (size_t i = 0, j = 0; i < max_length; ++i, ++j) {
+    if (chars[i] == '\\' && i < max_length - 1) {
+      switch (chars[++i]) {
+      case 'n':
+        formated[j] = '\n';
+        break;
+      case 't':
+        formated[j] = '\t';
+        break;
+      case 'r':
+        formated[j] = '\r';
+      case '\\':
+        formated[j] = '\\';
+        break;
+      case '\"':
+        formated[j] = '\"';
+        break;
+      default:
+        i--;
+        break;
+      }
+      continue;
+    }
+    formated[j] = chars[i];
+  }
+  return formated;
+}
+
+static ObjString *allocate_string(char *chars, size_t length, uint32_t hash,
+                                  bool string_literal) {
   ObjString *string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
   string->length = length;
-  string->chars = chars;
+  string->chars = string_literal ? format(chars) : chars;
   string->hash = hash;
   push(OBJ_VAL(string));
   table_set(&vm.strings, string, NIL_VAL);
@@ -107,10 +140,10 @@ ObjString *take_string(char *chars, size_t length) {
     FREE_ARRAY(char, chars, length + 1);
     return interned;
   }
-  return allocate_string(chars, length, hash);
+  return allocate_string(chars, length, hash, true);
 }
 
-ObjString *copy_string(const char *chars, size_t length) {
+ObjString *copy_string(const char *chars, size_t length, bool strlit) {
   uint32_t hash = hash_string(chars, length);
   ObjString *interned = table_find_string(&vm.strings, chars, length, hash);
   if (interned != NULL) {
@@ -119,7 +152,7 @@ ObjString *copy_string(const char *chars, size_t length) {
   char *heap_chars = ALLOCATE(char, length + 1);
   memcpy(heap_chars, chars, length);
   heap_chars[length] = '\0';
-  return allocate_string(heap_chars, length, hash);
+  return allocate_string(heap_chars, length, hash, strlit);
 }
 
 ObjUpvalue *new_upvalue(Value *slot) {

@@ -227,7 +227,7 @@ static void init_compiler(Compiler *compiler, FunctionType type) {
   current = compiler;
   if (type != TYPE_SCRIPT) {
     current->function->name =
-        copy_string(parser.previous.start, parser.previous.length);
+        copy_string(parser.previous.start, parser.previous.length, false);
   }
 
   Local *local = &current->locals[current->local_count++];
@@ -283,7 +283,7 @@ static ParseRule *get_rule(TokenType type);
 static void parse_precedence(Precedence precedence);
 
 static uint8_t identifier_constant(Token *name) {
-  return make_constant(OBJ_VAL(copy_string(name->start, name->length)));
+  return make_constant(OBJ_VAL(copy_string(name->start, name->length, false)));
 }
 
 static bool identifiers_equal(Token *a, Token *b) {
@@ -515,7 +515,7 @@ static void or_(bool can_assign) {
 
 static void string(bool can_assign) {
   emit_constant(OBJ_VAL(
-      copy_string(parser.previous.start + 1, parser.previous.length - 2)));
+      copy_string(parser.previous.start + 1, parser.previous.length - 2, true)));
 }
 
 static void named_variable(Token name, bool can_assign) {
@@ -718,7 +718,7 @@ static void function(FunctionType type) {
   init_compiler(&compiler, type);
   begin_scope();
   parser.last_line++;
-  emit_constant(OBJ_VAL(copy_string(parser.path, strlen(parser.path))));
+  emit_constant(OBJ_VAL(copy_string(parser.path, strlen(parser.path), false)));
   emit_byte(OP_PATH);
 
   consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
@@ -903,7 +903,7 @@ static void path_statement() {
   consume(TOKEN_FILE_PATH, "Expect path name.");
   parser.last_line = parser.previous.line;
   parser.path = substr(parser.previous.start, parser.previous.length);
-  emit_constant(OBJ_VAL(copy_string(parser.path, parser.previous.length - 1)));
+  emit_constant(OBJ_VAL(copy_string(parser.path, parser.previous.length - 1, false)));
   emit_byte(OP_PATH);
 }
 
