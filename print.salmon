@@ -7,3 +7,17 @@ function println(contents) {
   _print("
 ");
 }
+
+function print_array(array, seperator) {
+  for (var i := 0; i < _length(array); i += 1) {
+    print(array[i]);
+    if (i < _length(array) - 1) {
+      print(seperator);
+    }
+  }
+}
+
+function println_array(array, seperator) {
+  print_array(array, seperator);
+  println("");
+}

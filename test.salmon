@@ -7,8 +7,12 @@ function fib(n) {
   return fib(n - 2) + fib(n - 1);
 }
 var t := _clock();
-var x := "hi";
-println(x);
-println(x);
-println(x[2]);
+var x := [];
+println(_length(x));
+for(var i := 0; i < 20; i +=1) {
+  x += fib(i);
+println(_length(x));
+}
+println_array(x, "
+");
 println(_clock() - t);

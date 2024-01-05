@@ -15,29 +15,69 @@
 #include <time.h>
 
 VM vm;
-
+/// Native function for finding the length of an array/string.
+///
+/// Parameters:
+///   arg_count: The number of arguments (should be 1).
+///   args: An array of values representing the arguments passed to the native
+///   function.
+///
+/// Returns:
+///   A new value representing the length of the array/string, otherwise nil.
+static Value length_native(size_t arg_count, Value *args) {
+  if (IS_ARRAY(args[0])) {
+    return NUMBER_VAL((double)(AS_ARRAY(args[0])->values.count));
+  } else if (IS_STRING(args[0])) {
+    return NUMBER_VAL((double)(AS_STRING(args[0])->length));
+  } else {
+    return NIL_VAL;
+  }
+}
+/// Native function for retrieving the current time in seconds.
+///
+/// Parameters:
+///   arg_count: The number of arguments (should be 0).
+///   args: An array of values representing the arguments (not used).
+///
+/// Returns:
+///   A new value representing the current time in seconds.
 static Value clock_native(size_t arg_count, Value *args) {
   return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
-
+/// Prints the native function's result to the standard output.
+///
+/// Parameters:
+///   arg_count: The number of arguments passed to the native function.
+///   args: An array of values representing the arguments passed to the native
+///   function.
+///
+/// Returns:
+///   The result value of the native function.
 static Value print_native(size_t arg_count, Value *args) {
   print_value(args[0]);
   return NIL_VAL;
 }
-
+/// Resets the VM's stack, frame count, and open upvalues.
 static void reset_stack() {
   vm.stack_top = vm.stack;
   vm.frame_count = 0;
   vm.open_upvalues = NULL;
 }
-
+/// Handles runtime errors, printing an error message with formatted output to
+/// stderr. Also displays file, line, and function information for the error.
+///
+/// Parameters:
+///   format: The format string for the error message.
+///   ...: Variable arguments for the format string.
 static void runtime_error(const char *format, ...) {
+  // prints an error message with formated output to stderr.
   va_list args;
   va_start(args, format);
   vfprintf(stderr, format, args);
   va_end(args);
   fputs("\n", stderr);
 
+  // Displays file, line, and function information for the error.
   for (ssize_t i = vm.frame_count - 1; i >= 0; i--) {
     CallFrame *frame = &vm.frames[i];
     ObjFunction *function = frame->closure->function;
@@ -53,15 +93,22 @@ static void runtime_error(const char *format, ...) {
 
   reset_stack();
 }
-
+/// Defines a native function in the VM's global table.
+///
+/// Parameters:
+///   name: The name of the native function.
+///   function: A pointer to the native function.
 static void define_native(const char *name, NativeFn function) {
+  // creates a string object representing the native function name.
   push(OBJ_VAL(copy_string(name, strlen(name))));
+  // creates a closure for the native function and adds it to the global table.
   push(OBJ_VAL(new_native(function)));
   table_set(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
   pop();
   pop();
 }
-
+/// Initializes the virtual machine, resetting the stack and initializing
+/// various VM components.
 void init_VM() {
   reset_stack();
   vm.objects = NULL;
@@ -76,46 +123,79 @@ void init_VM() {
   vm.init_string = NULL;
   vm.init_string = copy_string("init", 4);
 
+  define_native("_length", length_native);
   define_native("_clock", clock_native);
   define_native("_print", print_native);
 }
 
+/// Frees the resources associated with the virtual machine, including global
+/// and string tables.
 void free_VM() {
   free_table(&vm.globals);
   free_table(&vm.strings);
   vm.init_string = NULL;
   free_objects();
 }
-
+/// Pushes a value onto the VM's stack.
+///
+/// Parameters:
+///   value: The value to be pushed onto the stack.
 void push(Value value) {
   *vm.stack_top = value;
   vm.stack_top++;
 }
-
+/// Pops a value from the VM's stack.
+///
+/// Returns:
+///   The popped value.
 Value pop() {
   vm.stack_top--;
   return *vm.stack_top;
 }
-
+/// Peeks at the value on the stack at a given distance from the top.
+///
+/// Parameters:
+///   distance: The distance from the top of the stack (0 for the top).
+///
+/// Returns:
+///   The value at the specified distance from the top of the stack.
 static Value peek(int distance) { return vm.stack_top[-1 - distance]; }
-
+/// Calls a closure with the specified number of arguments.
+///
+/// Parameters:
+///   closure: The closure to be called.
+///   arg_count: The number of arguments to pass to the closure.
+///
+/// Returns:
+///   A boolean indicating whether the call was successful.
+///   If false, a runtime error occurred.
 static bool call(ObjClosure *closure, size_t arg_count) {
   if (arg_count != closure->function->arity) {
     runtime_error("Expected %d arguments but got %d.", closure->function->arity,
                   arg_count);
     return false;
   }
+  // check for stack overflow
   if (vm.frame_count == FRAMES_MAX) {
     runtime_error("Stack overflow.");
     return false;
   }
+  // creates a call frame for the closure
   CallFrame *frame = &vm.frames[vm.frame_count++];
   frame->closure = closure;
   frame->ip = closure->function->chunk.code;
   frame->slots = vm.stack_top - arg_count - 1;
   return true;
 }
-
+/// Calls a value as a function with the specified number of arguments.
+///
+/// Parameters:
+///   callee: The value to be called.
+///   arg_count: The number of arguments to pass to the callee.
+///
+/// Returns:
+///   A boolean indicating whether the call was successful.
+///   If false, a runtime error occurred.
 static bool call_value(Value callee, size_t arg_count) {
   if (IS_OBJ(callee)) {
     switch (OBJ_TYPE(callee)) {
@@ -152,7 +232,17 @@ static bool call_value(Value callee, size_t arg_count) {
   runtime_error("Can only call functions and classes.");
   return false;
 }
-
+/// Invokes a method on a class with the specified method name and number of
+/// arguments.
+///
+/// Parameters:
+///   class: The class on which the method is invoked.
+///   name: The name of the method to invoke.
+///   arg_count: The number of arguments to pass to the method.
+///
+/// Returns:
+///   A boolean indicating whether the invocation was successful.
+///   If false, a runtime error occurred.
 static bool invoke_from_class(ObjClass *class, ObjString *name,
                               size_t arg_count) {
   Value method;
@@ -162,7 +252,16 @@ static bool invoke_from_class(ObjClass *class, ObjString *name,
   }
   return call(AS_CLOSURE(method), arg_count);
 }
-
+/// Invokes a method on an object or class with the specified number of
+/// arguments.
+///
+/// Parameters:
+///   name: The name of the method to invoke.
+///   arg_count: The number of arguments to pass to the method.
+///
+/// Returns:
+///   A boolean indicating whether the invocation was successful.
+///   If false, a runtime error occurred.
 static bool invoke(ObjString *name, size_t arg_count) {
   Value reciever = peek(arg_count);
   if (!IS_INSTANCE(reciever)) {
@@ -171,13 +270,23 @@ static bool invoke(ObjString *name, size_t arg_count) {
   }
   ObjInstance *instance = AS_INSTANCE(reciever);
   Value value;
+  // tries to acces the meathod from the instance's fields.
   if (table_get(&instance->fields, name, &value)) {
     vm.stack_top[-arg_count - 1] = value;
     return call_value(value, arg_count);
   }
+  // if not fount in the instance, looks for the method in its class
   return invoke_from_class(instance->klass, name, arg_count);
 }
-
+/// Binds a method to an object instance by creating a bound method.
+///
+/// Parameters:
+///   class: The class of the object instance.
+///   name: The name of the method to bind.
+///
+/// Returns:
+///   A boolean indicating whether the method binding was successful.
+///   If false, a runtime error occurred.
 static bool bind_method(ObjClass *class, ObjString *name) {
   Value method;
   if (!table_get(&class->methods, name, &method)) {
@@ -189,7 +298,15 @@ static bool bind_method(ObjClass *class, ObjString *name) {
   push(OBJ_VAL(bound));
   return true;
 }
-
+/// Captures the value of a local variable for use as an upvalue.
+///
+/// Parameters:
+///   local: A pointer to the local variable to be captured.
+///
+/// Returns:
+///   A pointer to the captured upvalue.
+///   If the upvalue already exists, the existing upvalue is returned.
+///   If a new upvalue is created, it is added to the list of open upvalues.
 static ObjUpvalue *capture_upvalue(Value *local) {
   ObjUpvalue *prev_upvalue = NULL;
   ObjUpvalue *upvalue = vm.open_upvalues;
@@ -209,7 +326,11 @@ static ObjUpvalue *capture_upvalue(Value *local) {
   }
   return created_upvalue;
 }
-
+/// Closes the upvalues that are no longer in scope.
+///
+/// Parameters:
+///   last: A pointer to the top of the stack, indicating the last value still
+///   in scope.
 static void close_upvalue(Value *last) {
   while (vm.open_upvalues != NULL && vm.open_upvalues->location >= last) {
     ObjUpvalue *upvalue = vm.open_upvalues;
@@ -218,19 +339,29 @@ static void close_upvalue(Value *last) {
     vm.open_upvalues = upvalue->next;
   }
 }
-
+/// Defines a method for a class by adding it to the class's method table.
+///
+/// Parameters:
+///   name: The name of the method.
 static void define_method(ObjString *name) {
   Value method = peek(0);
   ObjClass *class = AS_CLASS(peek(1));
   table_set(&class->methods, name, method);
   pop();
 }
-
+/// Checks if a given value is "falsey" according to Lox rules (in Salmon 0 is
+/// false).
+///
+/// Parameters:
+///   value: The value to check for truthiness or falsiness.
+///
+/// Returns:
+///   A boolean indicating whether the value is falsey.
 static bool is_falsey(Value value) {
   return IS_NIL(value) || (IS_NUMBER(value) && AS_NUMBER(value) == 0.0) ||
          (IS_BOOL(value) && !AS_BOOL(value));
 }
-
+/// Appends the top value of the stack to the array on the stack.
 static void append() {
   ObjArray *array = AS_ARRAY(peek(1));
   Value val = peek(0);
@@ -239,7 +370,7 @@ static void append() {
   pop();
   push(OBJ_VAL(array));
 }
-
+/// Concatenates two strings at the top of the stack.
 static void concatonate() {
   ObjString *b = AS_STRING(peek(0));
   ObjString *a = AS_STRING(peek(1));
@@ -254,22 +385,15 @@ static void concatonate() {
   push(OBJ_VAL(result));
 }
 
-static ObjString *get_as_string(Value val) {
-  if (IS_NIL(val)) {
-    return take_string("nil", 4);
-  } else if (IS_NUMBER(val)) {
-    char *chars = ALLOCATE(char, 65);
-    sprintf(chars, "%f", AS_NUMBER(val));
-    return take_string(chars, 65);
-  } else if (IS_BOOL(val)) {
-    if (AS_BOOL(val)) {
-      return take_string("true", 5);
-    }
-    return take_string("false", 6);
-  } else
-    return NULL;
-}
-
+/// Executes the bytecode in the current call frame.
+///
+/// This function interprets the bytecode instructions and executes the
+/// corresponding operations. It maintains the call frame and stack to keep
+/// track of the program state during execution.
+///
+/// Returns:
+///   The interpretation result, indicating success or the type of error
+///   encountered.
 static InterpretResult run() {
   CallFrame *frame = &vm.frames[vm.frame_count - 1];
 #define READ_BYTE() (*frame->ip++)
@@ -627,7 +751,14 @@ static InterpretResult run() {
 #undef READ_STRING
 #undef BINARY_OP
 }
-
+/// Interprets the source code provided and executes it.
+///
+/// Parameters:
+///   source: The source code to be interpreted.
+///
+/// Returns:
+///   The result of the interpretation (INTERPRET_OK, INTERPRET_COMPILE_ERROR,
+///   INTERPRET_RUNTIME_ERROR).
 InterpretResult interpret(const char *source) {
   ObjFunction *function = compile(source);
   if (function == NULL) {
