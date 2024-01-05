@@ -4,8 +4,7 @@ function print(contents) {
 
 function println(contents) {
   _print(contents);
-  _print("
-");
+  _print("\n");
 }
 
 function print_array(array, seperator) {

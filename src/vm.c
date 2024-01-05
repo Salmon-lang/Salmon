@@ -100,7 +100,7 @@ static void runtime_error(const char *format, ...) {
 ///   function: A pointer to the native function.
 static void define_native(const char *name, NativeFn function) {
   // creates a string object representing the native function name.
-  push(OBJ_VAL(copy_string(name, strlen(name))));
+  push(OBJ_VAL(copy_string(name, strlen(name), false)));
   // creates a closure for the native function and adds it to the global table.
   push(OBJ_VAL(new_native(function)));
   table_set(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
@@ -121,7 +121,7 @@ void init_VM() {
   init_table(&vm.strings);
 
   vm.init_string = NULL;
-  vm.init_string = copy_string("init", 4);
+  vm.init_string = copy_string("init", 4, false);
 
   define_native("_length", length_native);
   define_native("_clock", clock_native);

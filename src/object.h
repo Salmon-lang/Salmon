@@ -111,7 +111,7 @@ ObjFunction *new_function();
 ObjInstance *new_instance(ObjClass *klass);
 ObjNative *new_native(NativeFn function);
 ObjString *take_string(char *chars, size_t length);
-ObjString *copy_string(const char *chars, size_t length);
+ObjString *copy_string(const char *chars, size_t length, bool strlit);
 ObjArray *new_array();
 ObjUpvalue *new_upvalue(Value *slot);
 void print_object(Value value);
