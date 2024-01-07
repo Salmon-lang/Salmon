@@ -2,14 +2,20 @@
 #include "chunk.h"
 #include "debug.h"
 #include "memory.h"
+#include "object.h"
 #include "scanner.h"
+#include "value.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct Parser {
   Token current;
   Token previous;
+  char *path;
+  size_t last_line;
+  size_t current_line;
   bool had_error;
   bool panic_mode;
 } Parser;
@@ -56,6 +62,7 @@ typedef enum FunctionType {
 
 typedef struct Compiler {
   struct Compiler *enclosing;
+
   ObjFunction *function;
   FunctionType type;
 
@@ -81,7 +88,8 @@ static void error_at(Token *token, const char *message) {
     return;
   }
   parser.panic_mode = true;
-  fprintf(stderr, "[line %zu] Error", token->line);
+  fprintf(stderr, "[file %s, line %zu] Error", parser.path,
+          token->line - parser.last_line);
 
   if (token->type == TOKEN_EOF) {
     fprintf(stderr, " at end");
@@ -120,6 +128,24 @@ static void consume(TokenType type, const char *message) {
   }
 
   error_at_current(message);
+}
+
+static char *substr(const char *input, size_t length) {
+  size_t inputLength = strlen(input);
+
+  // Ensure the requested length is within bounds
+  if (length >= inputLength) {
+    length = inputLength - 1; // Exclude null terminator
+  }
+
+  // Allocate memory for the new string
+  char *result = (char *)malloc(length + 1); // +1 for null terminator
+
+  // Copy the substring to the new string
+  strncpy(result, input + 1, length - 1);
+  result[length - 1] = '\0'; // Null-terminate the new string
+
+  return result;
 }
 
 static bool check(TokenType type) { return parser.current.type == type; }
@@ -201,7 +227,7 @@ static void init_compiler(Compiler *compiler, FunctionType type) {
   current = compiler;
   if (type != TYPE_SCRIPT) {
     current->function->name =
-        copy_string(parser.previous.start, parser.previous.length);
+        copy_string(parser.previous.start, parser.previous.length, false);
   }
 
   Local *local = &current->locals[current->local_count++];
@@ -257,7 +283,7 @@ static ParseRule *get_rule(TokenType type);
 static void parse_precedence(Precedence precedence);
 
 static uint8_t identifier_constant(Token *name) {
-  return make_constant(OBJ_VAL(copy_string(name->start, name->length)));
+  return make_constant(OBJ_VAL(copy_string(name->start, name->length, false)));
 }
 
 static bool identifiers_equal(Token *a, Token *b) {
@@ -489,7 +515,7 @@ static void or_(bool can_assign) {
 
 static void string(bool can_assign) {
   emit_constant(OBJ_VAL(
-      copy_string(parser.previous.start + 1, parser.previous.length - 2)));
+      copy_string(parser.previous.start + 1, parser.previous.length - 2, true)));
 }
 
 static void named_variable(Token name, bool can_assign) {
@@ -574,6 +600,22 @@ static void this(bool can_assign) {
   variable(false);
 }
 
+static void array_access(bool can_assign) {
+  expression();
+  consume(TOKEN_RIGHT_BRACKET, "expect ']' after expression.");
+  if (can_assign && match(TOKEN_EQUAL)) {
+    expression();
+    emit_byte(OP_SET_ELEMENT);
+  } else {
+    emit_byte(OP_GET_ELEMENT);
+  }
+}
+
+static void array_create(bool can_assign) {
+  consume(TOKEN_RIGHT_BRACKET, "expect ']' following '[' to creat an array.");
+  emit_constant(OBJ_VAL(new_array()));
+}
+
 static void unary(bool can_assign) {
   TokenType operator_type = parser.previous.type;
   parse_precedence(PREC_UNARY);
@@ -594,6 +636,8 @@ ParseRule rules[] = {
     [TOKEN_RIGHT_PAREN] = {NULL, NULL, PREC_NONE},
     [TOKEN_LEFT_BRACE] = {NULL, NULL, PREC_NONE},
     [TOKEN_RIGHT_BRACE] = {NULL, NULL, PREC_NONE},
+    [TOKEN_LEFT_BRACKET] = {array_create, array_access, PREC_CALL},
+    [TOKEN_RIGHT_BRACKET] = {NULL, NULL, PREC_NONE},
     [TOKEN_COMMA] = {NULL, NULL, PREC_NONE},
     [TOKEN_DOT] = {NULL, dot, PREC_CALL},
     [TOKEN_MINUS] = {unary, binary, PREC_TERM},
@@ -670,6 +714,9 @@ static void function(FunctionType type) {
   Compiler compiler;
   init_compiler(&compiler, type);
   begin_scope();
+  parser.last_line++;
+  emit_constant(OBJ_VAL(copy_string(parser.path, strlen(parser.path), false)));
+  emit_byte(OP_PATH);
 
   consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
   if (!check(TOKEN_RIGHT_PAREN)) {
@@ -849,6 +896,14 @@ static void while_statement() {
   emit_byte(OP_POP);
 }
 
+static void path_statement() {
+  consume(TOKEN_FILE_PATH, "Expect path name.");
+  parser.last_line = parser.previous.line;
+  parser.path = substr(parser.previous.start, parser.previous.length);
+  emit_constant(OBJ_VAL(copy_string(parser.path, parser.previous.length - 1, false)));
+  emit_byte(OP_PATH);
+}
+
 static void synchronize() {
   parser.panic_mode = false;
   while (parser.current.type != TOKEN_EOF) {
@@ -897,6 +952,8 @@ static void statement() {
     if_statement();
   } else if (match(TOKEN_RETURN)) {
     return_statement();
+  } else if (match(TOKEN_PATH)) {
+    path_statement();
   } else {
     expression_statement();
   }

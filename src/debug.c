@@ -63,6 +63,8 @@ size_t disassemble_instruction(Chunk *chunk, size_t offset) {
   switch (chunk->code[offset]) {
   case OP_CONSTANT:
     return constant_instruction("OP_CONSTANT", chunk, offset);
+  case OP_PATH:
+    return simple_instruction("OP_PATH", offset);
   case OP_NIL:
     return simple_instruction("OP_NIL", offset);
   case OP_TRUE:
@@ -91,6 +93,10 @@ size_t disassemble_instruction(Chunk *chunk, size_t offset) {
     return constant_instruction("OP_SET_PROPERTY", chunk, offset);
   case OP_GET_SUPER:
     return constant_instruction("OP_GET_SUPER", chunk, offset);
+  case OP_GET_ELEMENT:
+    return simple_instruction("OP_GET_ELEMENT", offset);
+    case OP_SET_ELEMENT:
+    return simple_instruction("OP_SET_ELEMENT", offset);
   case OP_EQUAL:
     return simple_instruction("OP_EQUAL", offset);
   case OP_GREATER:

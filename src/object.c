@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define ALLOCATE_OBJ(type, object_type)                                        \
@@ -74,10 +75,55 @@ ObjNative *new_native(NativeFn function) {
   return native;
 }
 
-static ObjString *allocate_string(char *chars, size_t length, uint32_t hash) {
+ObjArray *new_array() {
+  ObjArray *array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
+  init_value_array(&array->values);
+  return array;
+}
+
+static char *format(char *chars) {
+  size_t max_length = strlen(chars);
+  char *formated = malloc(max_length + 1);
+  size_t j = 0;
+  for (size_t i = 0; i < max_length; ++i, ++j) {
+    if (chars[i] == '\\' && i < max_length - 1) {
+      switch (chars[i + 1]) {
+      case 'n':
+        formated[j] = '\n';
+        i++;
+        break;
+      case 't':
+        formated[j] = '\t';
+        i++;
+        break;
+      case 'r':
+        formated[j] = '\r';
+        i++;
+        break;
+      case '\\':
+        formated[j] = '\\';
+        i++;
+        break;
+      case '\"':
+        formated[j] = '\"';
+        i++;
+        break;
+      default:
+        break;
+      }
+    } else {
+      formated[j] = chars[i];
+    }
+  }
+  formated[j] = '\0';
+  return formated;
+}
+
+static ObjString *allocate_string(char *chars, size_t length, uint32_t hash,
+                                  bool string_literal) {
   ObjString *string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
   string->length = length;
-  string->chars = chars;
+  string->chars = string_literal ? format(chars) : chars;
   string->hash = hash;
   push(OBJ_VAL(string));
   table_set(&vm.strings, string, NIL_VAL);
@@ -101,10 +147,10 @@ ObjString *take_string(char *chars, size_t length) {
     FREE_ARRAY(char, chars, length + 1);
     return interned;
   }
-  return allocate_string(chars, length, hash);
+  return allocate_string(chars, length, hash, true);
 }
 
-ObjString *copy_string(const char *chars, size_t length) {
+ObjString *copy_string(const char *chars, size_t length, bool strlit) {
   uint32_t hash = hash_string(chars, length);
   ObjString *interned = table_find_string(&vm.strings, chars, length, hash);
   if (interned != NULL) {
@@ -113,7 +159,7 @@ ObjString *copy_string(const char *chars, size_t length) {
   char *heap_chars = ALLOCATE(char, length + 1);
   memcpy(heap_chars, chars, length);
   heap_chars[length] = '\0';
-  return allocate_string(heap_chars, length, hash);
+  return allocate_string(heap_chars, length, hash, strlit);
 }
 
 ObjUpvalue *new_upvalue(Value *slot) {
@@ -132,8 +178,22 @@ static void print_function(ObjFunction *function) {
   printf("<fn %s>", function->name->chars);
 }
 
+static void print_array(ObjArray *array) {
+  printf("[");
+  for (size_t i = 0; i < array->values.count; ++i) {
+    print_value(array->values.value[i]);
+    if (i < array->values.count - 1) {
+      printf(", ");
+    }
+  }
+  printf("]");
+}
+
 void print_object(Value value) {
   switch (OBJ_TYPE(value)) {
+  case OBJ_ARRAY:
+    print_array(AS_ARRAY(value));
+    break;
   case OBJ_BOUND_METHOD:
     print_function(AS_BOUND_METHOD(value)->method->function);
     break;

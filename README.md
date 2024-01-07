@@ -1,23 +1,26 @@
 <div align="center">
 
-# Salmon
+# Salmon Programming Language
 </div>
+
 <div align="center">
+    <img alt="GitHub open issues" src="https://img.shields.io/github/issues-raw/Salmon-lang/Salmon?style=for-the-badge">
+    <img alt="GitHub closed issues" src="https://img.shields.io/github/issues-closed/Salmon-lang/Salmon?style=for-the-badge">
+    <img alt="GitHub open pull requests" src="https://img.shields.io/github/issues-pr/Salmon-lang/Salmon?style=for-the-badge">
+    <img alt="GitHub closed pull requests" src="https://img.shields.io/github/issues-pr-closed/Salmon-lang/Salmon?style=for-the-badge">
     <img alt="GitHub forks" src="https://img.shields.io/github/forks/Salmon-lang/Salmon?style=for-the-badge">
     <img alt="GitHub stars" src="https://img.shields.io/github/stars/Salmon-lang/Salmon?style=for-the-badge"> 
-    <img alt="Version" src="https://img.shields.io/badge/release-v0.1-%23ff0000?style=for-the-badge">
+    <img alt="Version" src="https://img.shields.io/badge/release-v0.2-%23ff0000?style=for-the-badge">
 </div>
 
 <div align="center">
 
 ---
-### What is Salmon?
+### Overview
 <br>
 </div>
 
-Salmon is a dynamically typed, garbage collected language. It supports:
-- Object Oriented Programming
-- First Class Functions
+Salmon is a dynamically-typed, garbage-collected programming language designed to support Object-Oriented Programming and First-Class Functions.
 
 <div align="center">
 
@@ -26,30 +29,28 @@ Salmon is a dynamically typed, garbage collected language. It supports:
 <br>
 </div>
 
-- cmake v3.14+
-- any c compiler
+To successfully build Salmon, the following dependencies are required:
+- CMake version 3.14 or higher
+- Any C compiler
 
 <div align="center">
 
 ---
-### Build
+### Building Salmon
 <br>
 </div>
 
-1. clone the repo
-```bash
-git clone https://github.com/Salmon-lang/Salmon.git
-```
-2. go into `common.h` and edit the flags to turn on and off debugging and to ensure that it runs on your machine
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Salmon-lang/Salmon.git
+   ```
+2. Navigate to `common.h` and adjust the flags to enable or disable debugging and ensure compatiblity with your machine.
 
-3. run
-```bash
-cmake -B bld
-```
-4. run
-```bash
-cmake --build bld
-```
+3. run the following commands
+    ```bash
+    cmake -B bld
+    cmake --build bld
+    ```
 5. If you get any errors, relpace `NAN_BOXING` with `_NAN_BOXING` in `common.h`
 
 <div align="center">
@@ -59,7 +60,7 @@ cmake --build bld
 <br>
 </div>
 
-To use Salmon, run `./bld/salmon` plus the path to the `.salmon` file you plan to run.
+To use Salmon, run `./bld/salmon` followed by the path to the `.salmon` file you plan to run.
 <br><br>
 
 <div align="center">
@@ -68,19 +69,21 @@ To use Salmon, run `./bld/salmon` plus the path to the `.salmon` file you plan t
 ### Data Types
 </div>
 
-Salmon has 6 primative data types. They are:
+Salmon has seven primative data types:
 - double
-    - A number in Salmon is stored as a 64 bit, double persision, floating point decimal
+    - Represents an 64-bit double-presision floating-point number.
 - booleans
-    - A boolean can have one of two states, `true` or `false`
+    - Can either be `true` or `false`
 - strings
-    - A string is just a bunch of text. They can easily be concatonated. Salmon also treats all whitespace inbetween the opening and closing quotes of a string as part of the string, this includes spaces, tabs, and newlines
+    - A sequence of characters; supports easy concatonation.
 - nil
-    - `nil`is just the default value of variable and returns of functions, `nil` represents no value
+    - Represents the absence of a value; default for variables and function returns.
+- array
+    - A list of values that can be accessed and modified.
 - closures
-    - closures are to complicated for a bullet point, they will get their own section
+    - Functions treaded as values; allowing for dynamic usage.
 - objects
-    - objects are to complicated for just a bullet point, they will get their own section
+    - Complex structures with methods and variables.
 
 ---
 <div align="center">
@@ -89,14 +92,10 @@ Salmon has 6 primative data types. They are:
 </div>
 
 Salmon has 4 mathematical operators. They are:
-- `+`
-    - add two numbers together or concatonates two strings together
-- `-`
-    - subtracts two numbers, the right number from the left
-- `*`
-    - multiplies one number by another
-- `/`
-    - divides two numbers, the left by the right
+- `+`:Addition, string concationation, or appending to an array.
+- `-`:Subtractions or negation.
+- `*`:Multiplication.
+- `/`:Division.
 
 ---
 <div align="center">
@@ -104,19 +103,18 @@ Salmon has 4 mathematical operators. They are:
 ### Variables
 </div>
 
-As stated before, Salmon is a dynamically typed language, that means that a variable can hold any value, be it a double, a string, a bool, or any other type.
+Salmon, being dynamically typed, allows variables to hold any value such as doubles, strings, booleans, or other types.
 
 #### Declaration
 
-Unlike python, Salmon requires a variable to be explicetally declared before anything can be done with it. To declare a varibale the keyword `var` is used followed by the name of the variable.
+Unlike some languages, Salmon requires explicit variable declaration using the `var` keyword followed by the variable name.
 
 #### Asignment
-Inorder to really do anything with a variable, it must first have a value. In order to asign a value to a variable, `:=` is used followed by the value that you want to set the variable to. `+=`, `-=`, `*=`, `/=` are all other ways of asignment, they perform the mathematical operation on the original value of the variable with the value on the right and asigns the new value to the variable. A declaration and an asignment can be in the same statement. If there is not expicit asignment, a decalred variable it set as `nil`.
-
+To assign a value, use `:=`. Other assignment operators like `+=`, `-=`, `*=`, `\=` perform mathematical operations and update the variable.
 ```salmon
-var a; // a is declared and set to nil
-var b := 2; // b is declared and set to 2
-a := 3; // a is set to 3
+var a; // Declared and set to nil
+var b := 2; // Declared and set to 2
+a := 3; // Set to 3
 ```
 ---
 <div align="center">
@@ -124,33 +122,20 @@ a := 3; // a is set to 3
 ### Conditionals 
 </div>
 
-All a conditional does is it takes in a boolean expression and does something if it is `true` or `false`.
+Conditional statements in Salmon evaluate boolean expressions and execute code based on the result.
 
 #### Booleans
-There are 5 boolean operators:
-- `<`
-    - returns `true` if the left is less than the right, otherwise, `false`
-- `>`
-    - returns `true` if the left is greater than the right, otherwise, `false`
-- `=`
-    - returns `true` if the left is equal to the right, otherwise, `false`. Works with non numbers as well
-- `<=`
-    - returns `true` if the left is not greater than the right, otherwise, `false`
-- `>=`
-    - returns `true` if the left is not less than the right, otherwise, `false`
-- `!`
-    - returns the iverse boolean value of whatever the input includes
-- `&`
-    - if the left is `true` returns the right, otherwise, returns the left
-- `|`
-    - if the left if `false` returns the right, otherwise, returns the left
+There are five boolean operators:
+- `<`, `>`, `=`, `<=`, `>=`:Comparison operators.
+- `!`:Negation.
+- `&`, `|`:Logical AND and OR.
 
-All values have a boolean value. All strings, objects, closures, numbers besides `0`, and `true` have a `true` boolean value, while `nil`, `0`, and `false` all have a `false` boolean value
-#### if statements
-`if` takes in a boolean expression, and if it evaluate as `true`, it executes the block attached, if there is an `else` section attached to the `if`, it will execute the `else` block if the boolean evaluates `false`. You can even combine them into an `else if`
+All values have a boolean value, Strings, objects, closures, arrays, non-zero numbers, and `true` are truthy, while `nil`, `0`, and `false` are falsey.
+#### If Statements
 ```salmon
 var a := true;
 var b;
+
 if (a = 2) {
     b := 12;
 } else if (a = "true") {
@@ -160,30 +145,54 @@ if (a = 2) {
 }
 
 if (a & b)
-    //do something, do not need curly braces if only one statement in if block
+    // Do something; no need for curly braces
+    // if only one statement in the if block
 
-b := "hi" & nil; //sets b to nil because the left, "hi", is truethy so & returns the right, nil
-a := 1 | 3; //sets a to 1 because the left, 1, is truethy so | returns left, not right
+b := "hi" & nil; // Sets b to nil because the left, "hi" is truthy
 ```
 #### while loops
-`while` takes in a boolean expression, and will execute the code inside of the block until the boolean expression evaluates as `false`
 ```salmon
 var i := 0;
 var j := 0;
+
 while (i < 3) {
     i += 1;
     j += i;
 }
 
 while (j)
-    j -= 1; //the code in the while block does not need curly braces if it is just one statement
+    j -= 1; // The code in the while block does not need
+            // curly braces if it is just one statement
 ```
 #### for loops
-`for` takes in an optional variable declaration/asignment, and optional boolean expression, and an optional update section. It first asigns/declares the variables in the first section, then check if the boolean expression evaluates as `true`, then it executes the code in the `for` block, and finally it does the update section. It will repeate the `for` block execution and update section until the boolean expression evaluates `false`
 ```Salmon
 var j := 0;
+
 for (var i := 0; i < 3; i += 3)
     j += i;
+```
+---
+<div align = "center">
+
+### Arrays
+</div>
+
+Arrays in Salmon are declared using `[]`. Elements can be accessed, set, and values can be appended.
+#### Declaration
+```salmon
+var my_array := []; // Declares an empty array
+```
+#### Accessing an Element
+```salmon
+var value := my_array[0]; // Access the first element of the array
+```
+#### Setting an Element
+```salmon
+my_array[0] := 42; // Sets the first element of the array to 42
+```
+#### Appending values
+```salmon
+my_array += 99; // Appends 99 to the end of the array;
 ```
 ---
 <div align="center">
@@ -191,94 +200,138 @@ for (var i := 0; i < 3; i += 3)
 ### Functions
 </div>
 
-#### function definition
-A function is defined using the keyword `function` followed by a name and the `(` the parameters `)` and finally `{` the body `}`. If there is a plain `return` or none at all, the function will return `nil`
+#### Function Definition
+Functions in Salmon are defined using the `function` keyword, followed by the name, parameters, and body.
 ```salmon
-function foo(bar) {
-    return bar + 1;
+function add(a, b) {
+    return a + b;
 }
 ```
 
-#### function calls
-A function is called by typing the name followed by `(` the paramters `)`. A function can not be called before it is defined, it can be called before it is declared, but the function must have been already defined at that point in the program
+#### Function Calls
+Functions are called by typing the name followed by the parameters.
 ```salmon
-function call() {}
-call();
-
-function foo() {
-    bar();
-}
-foo(); // not ok, bar has not been defined
-function bar() {}
-foo(); // ok, bar has been defined
+var result := add(3, 5);
 ```
-
-#### native functions
-Native functions are functions that have been defined in c. They can bee spoted by their preceeding `_`
+#### Native Functions
+Native functions are pre-defined in C and indecated by a preceding `_`.
 ```salmon
 function print(contents) {
-    _print(contents); //prints contents to the console
+    _print(contents); // Prints contents to the console
 }
 
 print("Hell0, World!");
 ```
 
 #### closures
-Closures are the functions as values, they can be passed around, called, and asigned to variables. They are used by writing out the function name or variable that holds it with out the `()` and parameters
+Closures are functions treated as values. They can be passed around, called, and assigned to variables.
 ```salmon
-function foo() {
-    _print("foo");
+function greet() {
+    _print("Greetings!");
 }
 
-foo(); // prints foo
-var bar := foo;
-bar(); //prints foo
+var my_closure := greet;
+my_closure(); // Calls the closure
 ```
 ---
 <div align="center">
 
-### OOP
+### Object-Oriented Programming (OOP)
 </div>
 
-#### classes
-A class is defined with the keyword `class`, follwed by the name and `{` the body `}`.
-#### objects
-An object is just an instance of the class that has been created. In order to create an object, just type the name of the object as well as `(` the parameters `)`
-#### methods
-Methods are just functions attached to a class/objects. They can be called from a object using `.` to access any feild, be it a method or a variable. They are declared just like a function, the only difference it the lack of the `function` keyword
-#### variables
-Variables in a class/object are declared in a class using `this.` followed by the name of the variable. In an object they can be accesed uint `.`
-#### this
-`this` is a way to reference the class inside of the same class
-#### init
-`init` is a special function. It is called when creating an object
-#### inheritance
-To inherit from a superclass, `<` is used inbetween the class name and the superclass name. All methods are inherited from the superclass, they can be redefined
-#### super
-`super` is used the same as `this`, just for the superclass of the class.
+#### Classes
+Classes are defined with the `class` keyword, followed by the name and body.
 ```salmon
-class Foo {
-    init() {}
-    a() {
-        _print("foo");
-    }
-    b() {
-        _print("b");
+class Person {
+    say_hello(name) {
+        _print("Hello, my name is ");
+        _print(name);
     }
 }
-
-class Bar < Foo {
-    init() {
-        super.init();
-        this.bar = "bar";
-    }
-    a() {
-        super.a();
-        _print(this.bar);
-    }
-}
-
-var bar := Bar();
-bar.a();
-bar.b();
 ```
+#### Objects
+Objects are instances of classes and can be created by using the class anem followed by parameters.
+```salmon
+var person := Person();
+person.say_hello("John"); // Outputs "Hello, my name is John"
+```
+#### Methods
+Methods are functions associated with a class. They can be called from a object using `.`;
+```salmon
+class Calulator {
+    add(a, b) {
+        return a + b;
+    }
+}
+
+var calculator := Calulator();
+var sum := calculator.add(3, 4); // Calls the add method
+```
+#### Variables
+Class variables are declared by using `this.` in the class, and the can be accessed in objects using `.`.
+```salmon
+class Circle {
+    get_area() {
+        return 3.1415926 * this.radius * this.radius;
+    }
+}
+
+var my_circle = Circle();
+my_circle := 5;
+var area := my_circle.get_area();
+```
+#### Initialization
+The `init` function is a special method called when creating an object.
+```salmon
+class Car {
+    init(brand) {
+        this.brand := brand;
+    }
+}
+
+var my_car := Car("Toyota");
+```
+#### Inheritance
+To inherit from a superclass, use `<` between the class name and the superclass name.
+```salmon
+class Animal {
+    speak() {
+        _print("Animal speaks");
+    }
+}
+
+class Dog < Animal {
+    speak() {
+        _print("Dog barks");
+    }
+}
+
+var my_dog := Dog();
+my_dog.speak(); // Outputs "Dog barks"
+```
+#### Super
+`super` is used to reference the superclass inside a class.
+```salmon
+class Base {
+    greet() {
+        _print("Greetings from the base class");
+    }
+}
+
+class Derived < Base {
+    greet() {
+        super.greet();
+        _print("Additional greetings from the derived class");
+    }
+}
+
+var my_object := Derived();
+my_object.greet();
+```
+---
+<div align="center">
+
+### Conclusion
+</div>
+
+Salmon offers a versitile and expressive programming environment, facilitating a wide range of programming paradimes. Whether engaging in Object-Oriented Programming, utilizing First-Class Functions, or exploring the intracacies of dynamic typing, Salmon provides a frexible and powerful platform for software development.

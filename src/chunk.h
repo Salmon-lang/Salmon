@@ -4,6 +4,7 @@
 
 typedef enum Op_Code {
   OP_CONSTANT,
+  OP_PATH,
   OP_NIL,
   OP_TRUE,
   OP_FALSE,
@@ -17,6 +18,8 @@ typedef enum Op_Code {
   OP_SET_UPVALUE,
   OP_GET_PROPERTY,
   OP_SET_PROPERTY,
+  OP_GET_ELEMENT,
+  OP_SET_ELEMENT,
   OP_GET_SUPER,
   OP_EQUAL,
   OP_GREATER,

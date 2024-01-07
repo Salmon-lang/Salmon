@@ -31,6 +31,7 @@ typedef struct VM {
   size_t gray_count;
   size_t gray_capacity;
   Obj **gray_stack;
+  char *path;
 } VM;
 
 typedef enum InterpretResult {
