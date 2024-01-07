@@ -445,6 +445,11 @@ char *combine_files(char *file_path) {
       return NULL;
     }
   }
-  free(path);
-  return file_contents;
+  Imports im;
+  init_imports(&im);
+  write_import(&im, get_abs_file_path(remove_suffix(path, ".salmon")),
+               get_content(file_path));
+  char *result = merge_imports(&im);
+  free_imports(&im);
+  return result;
 }

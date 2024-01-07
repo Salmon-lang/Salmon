@@ -84,31 +84,38 @@ ObjArray *new_array() {
 static char *format(char *chars) {
   size_t max_length = strlen(chars);
   char *formated = malloc(max_length + 1);
-  for (size_t i = 0, j = 0; i < max_length; ++i, ++j) {
+  size_t j = 0;
+  for (size_t i = 0; i < max_length; ++i, ++j) {
     if (chars[i] == '\\' && i < max_length - 1) {
-      switch (chars[++i]) {
+      switch (chars[i + 1]) {
       case 'n':
         formated[j] = '\n';
+        i++;
         break;
       case 't':
         formated[j] = '\t';
+        i++;
         break;
       case 'r':
         formated[j] = '\r';
+        i++;
+        break;
       case '\\':
         formated[j] = '\\';
+        i++;
         break;
       case '\"':
         formated[j] = '\"';
+        i++;
         break;
       default:
-        i--;
         break;
       }
-      continue;
+    } else {
+      formated[j] = chars[i];
     }
-    formated[j] = chars[i];
   }
+  formated[j] = '\0';
   return formated;
 }
 

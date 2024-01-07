@@ -612,11 +612,8 @@ static void array_access(bool can_assign) {
 }
 
 static void array_create(bool can_assign) {
-  printf("create array\n");
   consume(TOKEN_RIGHT_BRACKET, "expect ']' following '[' to creat an array.");
-  printf("consume\n");
   emit_constant(OBJ_VAL(new_array()));
-  printf("emmit\n");
 }
 
 static void unary(bool can_assign) {

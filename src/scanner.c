@@ -1,6 +1,7 @@
 #include "scanner.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 typedef struct Scanner {
@@ -194,9 +195,20 @@ static Token file_path() {
 }
 
 static Token string() {
-  while (((peek() == '"' && scanner.current[-1] == '\\' && scanner.current[-2] != '\\') || peek() != '"') && !is_at_end()) {
+  while ((peek() != '"') && !is_at_end()) {
     if (peek() == '\n') {
       scanner.line++;
+    }
+    if (peek() == '\\') {
+      switch (peek_next()) {
+      case '\\':
+      case '\"':
+      case '\r':
+      case '\n':
+      case '\t':
+        advance();
+        break;
+      }
     }
     advance();
   }
