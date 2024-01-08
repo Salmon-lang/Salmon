@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "chunk.h"
 #include "compiler.h"
+#include "debug.h"
 #include "memory.h"
 #include "object.h"
 #include "table.h"
@@ -363,12 +364,15 @@ static bool is_falsey(Value value) {
 }
 /// Appends the top value of the stack to the array on the stack.
 static void append() {
-  ObjArray *array = AS_ARRAY(peek(1));
+  ObjArray array;
+  array = *AS_ARRAY(peek(1));
   Value val = peek(0);
-  write_value_array(&array->values, val);
+  write_value_array(&array.values, val);
   pop();
   pop();
-  push(OBJ_VAL(array));
+  ObjArray *arr = new_array();
+  arr->values = array.values;
+  push(OBJ_VAL(arr));
 }
 /// Concatenates two strings at the top of the stack.
 static void concatonate() {
@@ -577,25 +581,43 @@ static InterpretResult run() {
     }
     case OP_SET_ELEMENT: {
       if (!IS_ARRAY(peek(2))) {
-        runtime_error("Can not set element of a non array.");
+        runtime_error("Cannot set element of a non-array.");
       }
-      ObjArray *array = AS_ARRAY(peek(2));
+
+      ObjArray *originalArray = AS_ARRAY(peek(2));
+
       if (!IS_NUMBER(peek(1))) {
         runtime_error("Index must be a number.");
       }
+
       Value index = peek(1);
       int i = (int)(AS_NUMBER(index));
-      if (i < array->values.count && i >= 0) {
-        Value value;
-        value = pop();
-        pop();
-        pop();
-        array->values.value[i] = value;
-        push(value);
+
+      if (i < originalArray->values.count && i >= 0) {
+        Value value = pop(); // Pop the value to be set.
+        pop();               // Pop the index.
+        pop();               // Pop the array.
+
+        ObjArray *modifiedArray = new_array(); // Create a new array.
+
+        // Copy the values from the original array to the modified array.
+        for (size_t j = 0; j < originalArray->values.count; j++) {
+          if (j == (size_t)i) {
+            write_value_array(&modifiedArray->values,
+                              value); // Set the new value.
+          } else {
+            write_value_array(&modifiedArray->values,
+                              originalArray->values.value[j]);
+          }
+        }
+
+        push(value);                  // Push the value back onto the stack.
+        push(OBJ_VAL(modifiedArray)); // Push the modified array onto the stack.
         break;
       }
+
       runtime_error("Index of %d out of bounds for array of length %zu.", i,
-                    array->values.count);
+                    originalArray->values.count);
       break;
     }
     case OP_EQUAL: {
