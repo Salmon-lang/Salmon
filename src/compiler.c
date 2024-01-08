@@ -13,6 +13,7 @@
 typedef struct Parser {
   Token current;
   Token previous;
+  Token prev_previous;
   char *path;
   size_t last_line;
   size_t current_line;
@@ -110,6 +111,7 @@ static void error_at_current(const char *message) {
 }
 
 static void advance() {
+  parser.prev_previous = parser.previous;
   parser.previous = parser.current;
   for (;;) {
     parser.current = scan_token();
@@ -514,8 +516,22 @@ static void or_(bool can_assign) {
 }
 
 static void string(bool can_assign) {
-  emit_constant(OBJ_VAL(
-      copy_string(parser.previous.start + 1, parser.previous.length - 2, true)));
+  emit_constant(OBJ_VAL(copy_string(parser.previous.start + 1,
+                                    parser.previous.length - 2, true)));
+}
+
+static void set_named_array(Token name) {
+  uint8_t set_op;
+  int arg = resolve_local(current, &name);
+  if (arg != -1) {
+    set_op = OP_SET_LOCAL;
+  } else if ((arg = resolve_upvalue(current, &name)) != -1) {
+    set_op = OP_SET_UPVALUE;
+  } else {
+    arg = identifier_constant(&name);
+    set_op = OP_SET_GLOBAL;
+  }
+  emit_bytes(set_op, (uint8_t)arg);
 }
 
 static void named_variable(Token name, bool can_assign) {
@@ -601,11 +617,13 @@ static void this(bool can_assign) {
 }
 
 static void array_access(bool can_assign) {
+  Token array = parser.prev_previous;
   expression();
   consume(TOKEN_RIGHT_BRACKET, "expect ']' after expression.");
   if (can_assign && match(TOKEN_EQUAL)) {
     expression();
     emit_byte(OP_SET_ELEMENT);
+    set_named_array(array);
   } else {
     emit_byte(OP_GET_ELEMENT);
   }
@@ -900,7 +918,8 @@ static void path_statement() {
   consume(TOKEN_FILE_PATH, "Expect path name.");
   parser.last_line = parser.previous.line;
   parser.path = substr(parser.previous.start, parser.previous.length);
-  emit_constant(OBJ_VAL(copy_string(parser.path, parser.previous.length - 1, false)));
+  emit_constant(
+      OBJ_VAL(copy_string(parser.path, parser.previous.length - 1, false)));
   emit_byte(OP_PATH);
 }
 
