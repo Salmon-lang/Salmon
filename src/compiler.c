@@ -520,6 +520,35 @@ static void string(bool can_assign) {
                                     parser.previous.length - 2, true)));
 }
 
+static void block();
+
+static void lambda(bool can_assign) {
+  Compiler compiler;
+  init_compiler(&compiler, TYPE_FUNCTION);
+  begin_scope();
+  consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+  if (!check(TOKEN_RIGHT_PAREN)) {
+    do {
+      current->function->arity++;
+      if (current->function->arity > 255) {
+        error_at_current("Can't have more that 255 parameters.");
+      }
+      uint8_t constant = parse_variable("Expect parameter name.");
+      define_variable(constant);
+    } while (match(TOKEN_COMMA));
+  }
+  consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+  consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+  block();
+  ObjFunction *function = end_compiler();
+  emit_bytes(OP_CLOSURE, make_constant(OBJ_VAL(function)));
+
+  for (size_t i = 0; i < function->upvalue_count; ++i) {
+    emit_byte(compiler.upvalues[i].is_local ? 1 : 0);
+    emit_byte(compiler.upvalues[i].index);
+  }
+}
+
 static void set_named_array(Token name) {
   uint8_t set_op;
   int arg = resolve_local(current, &name);
@@ -676,6 +705,7 @@ ParseRule rules[] = {
     [TOKEN_IDENTIFIER] = {variable, NULL, PREC_NONE},
     [TOKEN_STRING] = {string, NULL, PREC_NONE},
     [TOKEN_NUMBER] = {number, NULL, PREC_NONE},
+    [TOKEN_LAMBDA] = {lambda, NULL, PREC_NONE},
     [TOKEN_AND] = {NULL, and_, PREC_AND},
     [TOKEN_CLASS] = {NULL, NULL, PREC_NONE},
     [TOKEN_ELSE] = {NULL, NULL, PREC_NONE},

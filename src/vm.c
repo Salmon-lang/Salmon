@@ -595,8 +595,6 @@ static InterpretResult run() {
 
       if (i < originalArray->values.count && i >= 0) {
         Value value = pop(); // Pop the value to be set.
-        pop();               // Pop the index.
-        pop();               // Pop the array.
 
         ObjArray *modifiedArray = new_array(); // Create a new array.
 
@@ -611,6 +609,8 @@ static InterpretResult run() {
           }
         }
 
+        pop();               // Pop the index.
+        pop();               // Pop the array.
         push(value);                  // Push the value back onto the stack.
         push(OBJ_VAL(modifiedArray)); // Push the modified array onto the stack.
         break;
