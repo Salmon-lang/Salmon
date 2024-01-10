@@ -10,7 +10,7 @@ endif()
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
-project(CLox C)
+project(Salmon C)
 
 add_executable(
   salmon
@@ -26,3 +26,5 @@ add_executable(
   src/vm.c
   src/debug.c
 )
+# Add the math library to link against
+target_link_libraries(salmon m)

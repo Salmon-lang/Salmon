@@ -27,7 +27,7 @@ VM vm;
 ///   A new value representing the length of the array/string, otherwise nil.
 static Value length_native(size_t arg_count, Value *args) {
   if (IS_ARRAY(args[0])) {
-    return NUMBER_VAL((double)(AS_ARRAY(args[0])->values.count));
+    return NUMBER_VAL((double)(AS_ARRAY(args[0])->length));
   } else if (IS_STRING(args[0])) {
     return NUMBER_VAL((double)(AS_STRING(args[0])->length));
   } else {
@@ -362,17 +362,38 @@ static bool is_falsey(Value value) {
   return IS_NIL(value) || (IS_NUMBER(value) && AS_NUMBER(value) == 0.0) ||
          (IS_BOOL(value) && !AS_BOOL(value));
 }
+static ObjArray *copy_array(ObjArray *original) {
+  ObjArray *copy = new_array();
+
+  // Copy the values from the original array to the new array
+  for (size_t i = 0; i < original->length; ++i) {
+    Value value;
+    table_get(&original->values, int_to_string((int)i), &value);
+    table_set(&copy->values, int_to_string((int)i), value);
+  }
+
+  copy->length = original->length;
+
+  return copy;
+}
 /// Appends the top value of the stack to the array on the stack.
 static void append() {
-  ObjArray array;
-  array = *AS_ARRAY(peek(1));
-  Value val = peek(0);
-  write_value_array(&array.values, val);
+  ObjArray *array = copy_array(AS_ARRAY(peek(1)));
+  // Create a new string for the index
+  ObjString *index_str = int_to_string((int)array->length);
+
+  // Use the new string to set the value in the table
+  table_set(&array->values, index_str, peek(0));
+
+  // Increment the length
+  array->length++;
+
+  // Pop the value and array
   pop();
   pop();
-  ObjArray *arr = new_array();
-  arr->values = array.values;
-  push(OBJ_VAL(arr));
+
+  // Push the updated array
+  push(OBJ_VAL(array));
 }
 /// Concatenates two strings at the top of the stack.
 static void concatonate() {
@@ -546,10 +567,10 @@ static InterpretResult run() {
         Value index = peek(0);
         Value value;
         int i = (int)(AS_NUMBER(index));
-        if (i < array->values.count && i >= 0) {
+        if (i < array->length && i >= 0) {
           pop();
           pop();
-          value = array->values.value[i];
+          table_get(&array->values, int_to_string(i), &value);
           push(value);
           break;
         }
@@ -584,7 +605,7 @@ static InterpretResult run() {
         runtime_error("Cannot set element of a non-array.");
       }
 
-      ObjArray *originalArray = AS_ARRAY(peek(2));
+      ObjArray *originalArray = copy_array(AS_ARRAY(peek(2)));
 
       if (!IS_NUMBER(peek(1))) {
         runtime_error("Index must be a number.");
@@ -595,24 +616,11 @@ static InterpretResult run() {
 
       if (i < originalArray->values.count && i >= 0) {
         Value value = pop(); // Pop the value to be set.
-
-        ObjArray *modifiedArray = new_array(); // Create a new array.
-
-        // Copy the values from the original array to the modified array.
-        for (size_t j = 0; j < originalArray->values.count; j++) {
-          if (j == (size_t)i) {
-            write_value_array(&modifiedArray->values,
-                              value); // Set the new value.
-          } else {
-            write_value_array(&modifiedArray->values,
-                              originalArray->values.value[j]);
-          }
-        }
-
-        pop();               // Pop the index.
-        pop();               // Pop the array.
-        push(value);                  // Push the value back onto the stack.
-        push(OBJ_VAL(modifiedArray)); // Push the modified array onto the stack.
+        table_set(&originalArray->values, int_to_string(i), value);
+        pop();       // Pop the index.
+        pop();       // Pop the array.
+        push(value); // Push the value back onto the stack.
+        push(OBJ_VAL(originalArray));
         break;
       }
 

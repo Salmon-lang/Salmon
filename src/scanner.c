@@ -123,8 +123,6 @@ static TokenType identifier_type() {
   switch (scanner.start[0]) {
   case 'c':
     return check_keyword(1, 4, "lass", TOKEN_CLASS);
-  case 'l':
-    return check_keyword(1, 5, "ambda", TOKEN_LAMBDA);
   case 'e':
     return check_keyword(1, 3, "lse", TOKEN_ELSE);
   case 'i':

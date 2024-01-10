@@ -77,7 +77,8 @@ ObjNative *new_native(NativeFn function) {
 
 ObjArray *new_array() {
   ObjArray *array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
-  init_value_array(&array->values);
+  init_table(&array->values);
+  array->length = 0;
   return array;
 }
 
@@ -139,6 +140,21 @@ static uint32_t hash_string(const char *key, size_t length) {
   }
   return hash;
 }
+/// Checks converts an int to a string.
+///
+/// Parameters:
+///   i: The integer to be converted to an string.
+///
+/// Returns:
+///   An ObjectString containing the digits of the int.
+ObjString *int_to_string(int i) {
+  size_t digits = (i == 0) ? 1 : log10(i) + 1;
+  char *number = ALLOCATE(char, digits + 1);
+  sprintf(number, "%d", i);
+  number[digits] = '\0';
+  ObjString *string = take_string(number, digits);
+  return string;
+}
 
 ObjString *take_string(char *chars, size_t length) {
   uint32_t hash = hash_string(chars, length);
@@ -180,9 +196,11 @@ static void print_function(ObjFunction *function) {
 
 static void print_array(ObjArray *array) {
   printf("[");
-  for (size_t i = 0; i < array->values.count; ++i) {
-    print_value(array->values.value[i]);
-    if (i < array->values.count - 1) {
+  for (size_t i = 0; i < array->length; ++i) {
+    Value value;
+    table_get(&array->values, int_to_string((int)i), &value);
+    print_value(value);
+    if (i < array->length - 1) {
       printf(", ");
     }
   }

@@ -5,6 +5,7 @@
 #include "table.h"
 #include "value.h"
 #include <stddef.h>
+#include <math.h>
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
@@ -101,7 +102,8 @@ typedef struct ObjBoundMethod {
 
 typedef struct {
   Obj obj;
-  ValueArray values;
+  Table values;
+  size_t length;
 } ObjArray;
 
 ObjBoundMethod *new_bound_method(Value reciever, ObjClosure *method);
@@ -110,6 +112,7 @@ ObjClosure *new_closure(ObjFunction *function);
 ObjFunction *new_function();
 ObjInstance *new_instance(ObjClass *klass);
 ObjNative *new_native(NativeFn function);
+ObjString *int_to_string(int i);
 ObjString *take_string(char *chars, size_t length);
 ObjString *copy_string(const char *chars, size_t length, bool strlit);
 ObjArray *new_array();

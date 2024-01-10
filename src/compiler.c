@@ -526,8 +526,7 @@ static void lambda(bool can_assign) {
   Compiler compiler;
   init_compiler(&compiler, TYPE_FUNCTION);
   begin_scope();
-  consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
-  if (!check(TOKEN_RIGHT_PAREN)) {
+  if (!check(TOKEN_OR)) {
     do {
       current->function->arity++;
       if (current->function->arity > 255) {
@@ -537,8 +536,10 @@ static void lambda(bool can_assign) {
       define_variable(constant);
     } while (match(TOKEN_COMMA));
   }
-  consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
-  consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+  consume(TOKEN_OR, "Expect '|' after parameters.");
+  consume(TOKEN_EQUAL_EQUAL, "Expect '=>' after parameters.");
+  consume(TOKEN_GREATER, "Expect '=>' after parameters.");
+  consume(TOKEN_LEFT_BRACE, "Expect '{' before lambda body.");
   block();
   ObjFunction *function = end_compiler();
   emit_bytes(OP_CLOSURE, make_constant(OBJ_VAL(function)));
@@ -705,7 +706,6 @@ ParseRule rules[] = {
     [TOKEN_IDENTIFIER] = {variable, NULL, PREC_NONE},
     [TOKEN_STRING] = {string, NULL, PREC_NONE},
     [TOKEN_NUMBER] = {number, NULL, PREC_NONE},
-    [TOKEN_LAMBDA] = {lambda, NULL, PREC_NONE},
     [TOKEN_AND] = {NULL, and_, PREC_AND},
     [TOKEN_CLASS] = {NULL, NULL, PREC_NONE},
     [TOKEN_ELSE] = {NULL, NULL, PREC_NONE},
@@ -714,7 +714,7 @@ ParseRule rules[] = {
     [TOKEN_FUN] = {NULL, NULL, PREC_NONE},
     [TOKEN_IF] = {NULL, NULL, PREC_NONE},
     [TOKEN_NIL] = {literal, NULL, PREC_NONE},
-    [TOKEN_OR] = {NULL, or_, PREC_OR},
+    [TOKEN_OR] = {lambda, or_, PREC_OR},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {super, NULL, PREC_NONE},
     [TOKEN_THIS] = {this, NULL, PREC_NONE},

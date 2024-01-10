@@ -42,7 +42,6 @@ typedef enum TokenType {
   TOKEN_FALSE,
   TOKEN_FOR,
   TOKEN_FUN,
-  TOKEN_LAMBDA,
   TOKEN_IF,
   TOKEN_NIL,
   TOKEN_OR,
