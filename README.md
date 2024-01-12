@@ -10,7 +10,7 @@
     <img alt="GitHub closed pull requests" src="https://img.shields.io/github/issues-pr-closed/Salmon-lang/Salmon?style=for-the-badge">
     <img alt="GitHub forks" src="https://img.shields.io/github/forks/Salmon-lang/Salmon?style=for-the-badge">
     <img alt="GitHub stars" src="https://img.shields.io/github/stars/Salmon-lang/Salmon?style=for-the-badge"> 
-    <img alt="Version" src="https://img.shields.io/badge/release-v0.2.1-%23ff0000?style=for-the-badge">
+    <img alt="Version" src="https://img.shields.io/badge/release-v0.3-%23ff0000?style=for-the-badge">
 </div>
 
 <div align="center">
@@ -223,7 +223,7 @@ function print(contents) {
 print("Hell0, World!");
 ```
 
-#### closures
+#### Closures
 Closures are functions treated as values. They can be passed around, called, and assigned to variables.
 ```salmon
 function greet() {
@@ -232,6 +232,21 @@ function greet() {
 
 var my_closure := greet;
 my_closure(); // Calls the closure
+```
+
+#### Lambdas
+Lambdas are anonymous functions. They are treated as a closure.
+```salmon
+function apply(x, fn) {
+    return fn(x);
+}
+
+var x := 12;
+var square := |x| => {
+    return x * x;
+}; // Creates the lambda and assigns it to the variable 'square'
+
+x := apply(x, square);
 ```
 ---
 <div align="center">
