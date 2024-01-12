@@ -44,7 +44,8 @@ static void free_object(Obj *object) {
   switch (object->type) {
   case OBJ_ARRAY: {
     ObjArray *array = (ObjArray *)object;
-    free_value_array(&array->values);
+    free_table(&array->values);
+    array->length = 0;
     FREE(ObjArray, object);
     break;
   }
@@ -136,7 +137,7 @@ static void blacken_object(Obj *object) {
   switch (object->type) {
   case OBJ_ARRAY: {
     ObjArray *array = (ObjArray *)object;
-    mark_array(&array->values);
+    mark_table(&array->values);
     break;
   }
   case OBJ_BOUND_METHOD: {
