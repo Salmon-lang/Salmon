@@ -10,7 +10,7 @@
     <img alt="GitHub closed pull requests" src="https://img.shields.io/github/issues-pr-closed/Salmon-lang/Salmon?style=for-the-badge">
     <img alt="GitHub forks" src="https://img.shields.io/github/forks/Salmon-lang/Salmon?style=for-the-badge">
     <img alt="GitHub stars" src="https://img.shields.io/github/stars/Salmon-lang/Salmon?style=for-the-badge"> 
-    <img alt="Version" src="https://img.shields.io/badge/release-v0.3-%23ff0000?style=for-the-badge">
+    <img alt="Version" src="https://img.shields.io/badge/release-v0.4-%23ff0000?style=for-the-badge">
 </div>
 
 <div align="center">
@@ -131,7 +131,7 @@ There are five boolean operators:
 - `&`, `|`:Logical AND and OR.
 
 All values have a boolean value, Strings, objects, closures, arrays, non-zero numbers, and `true` are truthy, while `nil`, `0`, and `false` are falsey.
-#### If Statements
+#### if Statements
 ```salmon
 var a := true;
 var b;
@@ -149,6 +149,10 @@ if (a & b)
     // if only one statement in the if block
 
 b := "hi" & nil; // Sets b to nil because the left, "hi" is truthy
+```
+#### ternary operators
+```salmon
+var x := (1 + 1 = 2) ? 2 : 1; // Sets x to 2 because 1 + 1 is equal to 2
 ```
 #### while loops
 ```salmon
