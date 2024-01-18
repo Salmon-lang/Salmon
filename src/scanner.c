@@ -262,6 +262,8 @@ Token scan_token() {
     return make_token(TOKEN_OR);
   case '&':
     return make_token(TOKEN_AND);
+  case '?':
+    return make_token(TOKEN_QUESTION);
   case '+':
     return make_token(match('=') ? TOKEN_PLUS_EQUAL : TOKEN_PLUS);
   case '-':
@@ -280,12 +282,8 @@ Token scan_token() {
     }
     break;
 #endif /* ifdef __UNIX__ */
-  case ':': {
-    if (match('=')) {
-      return make_token(TOKEN_EQUAL);
-    }
-    break;
-  }
+  case ':':
+    return make_token(match('=') ? TOKEN_EQUAL : TOKEN_COLON);
   case '!':
     return make_token(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
   case '<':
