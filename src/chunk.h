@@ -41,7 +41,8 @@ typedef enum Op_Code {
   OP_CLOSE_UPVALUE,
   OP_RETURN,
   OP_CLASS,
-  OP_METHOD
+  OP_METHOD,
+  OP_PRIVATE_METHOD
 } Op_Code;
 
 typedef struct Chunk {

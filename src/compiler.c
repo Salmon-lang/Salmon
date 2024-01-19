@@ -58,6 +58,7 @@ typedef enum FunctionType {
   TYPE_FUNCTION,
   TYPE_INITIALIZER,
   TYPE_METHOD,
+  TYPE_PRIVATE_METHOD,
   TYPE_SCRIPT
 } FunctionType;
 
@@ -466,6 +467,11 @@ static void call(bool can_assign) {
 }
 
 static void dot(bool can_assign) {
+  bool this = false;
+  if (strncmp(parser.prev_previous.start, "this", 4) == 0) {
+    printf("this\n");
+    this = true;
+  }
   consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
   uint8_t name = identifier_constant(&parser.previous);
   if (can_assign && match(TOKEN_EQUAL)) {
@@ -473,6 +479,7 @@ static void dot(bool can_assign) {
     emit_bytes(OP_SET_PROPERTY, name);
   } else if (match(TOKEN_LEFT_PAREN)) {
     uint8_t arg_count = argument_list();
+    emit_constant(this ? TRUE_VAL : FALSE_VAL);
     emit_bytes(OP_INVOKE, name);
     emit_byte(arg_count);
   } else {
@@ -804,6 +811,10 @@ static void function(FunctionType type) {
 }
 
 static void method() {
+  bool private = false;
+  if (match(TOKEN_PRIVATE)) {
+    private = true;
+  }
   consume(TOKEN_IDENTIFIER, "Expect method name.");
   uint8_t constant = identifier_constant(&parser.previous);
   FunctionType type = TYPE_METHOD;
@@ -812,7 +823,11 @@ static void method() {
     type = TYPE_INITIALIZER;
   }
   function(type);
-  emit_bytes(OP_METHOD, constant);
+  if (private) {
+    emit_bytes(OP_PRIVATE_METHOD, constant);
+  } else {
+    emit_bytes(OP_METHOD, constant);
+  }
 }
 
 static void class_declaration() {
