@@ -284,6 +284,7 @@ static void declaration();
 static void statement();
 static ParseRule *get_rule(TokenType type);
 static void parse_precedence(Precedence precedence);
+static Token synthetic_token(const char *text);
 
 static uint8_t identifier_constant(Token *name) {
   return make_constant(OBJ_VAL(copy_string(name->start, name->length, false)));
@@ -463,13 +464,20 @@ static void binary(bool can_assign) {
 
 static void call(bool can_assign) {
   uint8_t arg_count = argument_list();
-  emit_bytes(OP_CALL, arg_count);
+  if (strncmp(parser.previous.start, "super", 5) == 0) {
+    Token token = synthetic_token("init");
+    uint8_t init = identifier_constant(&token);
+    emit_constant(FALSE_VAL);
+    emit_bytes(OP_SUPER_INVOKE, init);
+    emit_byte(arg_count);
+  } else {
+    emit_bytes(OP_CALL, arg_count);
+  }
 }
 
 static void dot(bool can_assign) {
   bool this = false;
   if (strncmp(parser.prev_previous.start, "this", 4) == 0) {
-    printf("this\n");
     this = true;
   }
   consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
@@ -651,6 +659,14 @@ static void this(bool can_assign) {
     return;
   }
   variable(false);
+  if (match(TOKEN_LEFT_PAREN)) {
+    uint8_t arg_count = argument_list();
+    Token token = synthetic_token("init");
+    uint8_t init = identifier_constant(&token);
+    emit_constant(TRUE_VAL);
+    emit_bytes(OP_INVOKE, init);
+    emit_byte(arg_count);
+  }
 }
 
 static void array_access(bool can_assign) {
