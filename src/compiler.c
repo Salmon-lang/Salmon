@@ -638,7 +638,17 @@ static void super(bool can_assign) {
   } else if (!current_class->has_superclass) {
     error("Can't use 'super' in a class with no superclass");
   }
-  consume(TOKEN_DOT, "Expect '.' after 'super'.");
+  if (match(TOKEN_LEFT_PAREN)) {
+    Token token = synthetic_token("init");
+    uint8_t init = identifier_constant(&token);
+    named_variable(synthetic_token("this"), false);
+    uint8_t arg_count = argument_list();
+    named_variable(synthetic_token("super"), false);
+    emit_bytes(OP_SUPER_INVOKE, init);
+    emit_byte(arg_count);
+    return;
+  }
+  consume(TOKEN_DOT, "Expect '.' or '(' after 'super'.");
   consume(TOKEN_IDENTIFIER, "Expect superclass method name.");
   uint8_t name = identifier_constant(&parser.previous);
   named_variable(synthetic_token("this"), false);

@@ -767,6 +767,7 @@ static InterpretResult run() {
       }
       ObjClass *subclass = AS_CLASS(peek(0));
       table_add_all(&AS_CLASS(superclass)->methods, &subclass->methods);
+      table_add_all(&AS_CLASS(superclass)->private_methods, &subclass->private_methods);
       pop();
       break;
     }
