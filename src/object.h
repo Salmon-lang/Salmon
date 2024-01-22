@@ -4,8 +4,8 @@
 #include "common.h"
 #include "table.h"
 #include "value.h"
-#include <stddef.h>
 #include <math.h>
+#include <stddef.h>
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
@@ -86,6 +86,7 @@ typedef struct ObjClass {
   Obj obj;
   ObjString *name;
   Table methods;
+  Table private_methods;
 } ObjClass;
 
 typedef struct ObjInstance {

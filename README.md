@@ -10,7 +10,7 @@
     <img alt="GitHub closed pull requests" src="https://img.shields.io/github/issues-pr-closed/Salmon-lang/Salmon?style=for-the-badge">
     <img alt="GitHub forks" src="https://img.shields.io/github/forks/Salmon-lang/Salmon?style=for-the-badge">
     <img alt="GitHub stars" src="https://img.shields.io/github/stars/Salmon-lang/Salmon?style=for-the-badge"> 
-    <img alt="Version" src="https://img.shields.io/badge/release-v0.4-%23ff0000?style=for-the-badge">
+    <img alt="Version" src="https://img.shields.io/badge/release-v0.5-%23ff0000?style=for-the-badge">
 </div>
 
 <div align="center">
@@ -285,6 +285,24 @@ class Calulator {
 
 var calculator := Calulator();
 var sum := calculator.add(3, 4); // Calls the add method
+```
+#### Private Methods
+Private methods are functions associated with a class. They can only be called inside of the class and subclass.
+```salmon
+class A {
+    private hello(name) {
+        _print("hello ");
+        _print(name);
+    }
+
+    say_hello(name) {
+        this.hello(name); // Calls the private method 'hello'
+    }
+}
+
+var a := A();
+a.say_hello("John"); // Calls the say_hello method
+a.hello("John"); // Errors because hello is private
 ```
 #### Variables
 Class variables are declared by using `this.` in the class, and the can be accessed in objects using `.`.

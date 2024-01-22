@@ -58,6 +58,7 @@ typedef enum FunctionType {
   TYPE_FUNCTION,
   TYPE_INITIALIZER,
   TYPE_METHOD,
+  TYPE_PRIVATE_METHOD,
   TYPE_SCRIPT
 } FunctionType;
 
@@ -283,6 +284,7 @@ static void declaration();
 static void statement();
 static ParseRule *get_rule(TokenType type);
 static void parse_precedence(Precedence precedence);
+static Token synthetic_token(const char *text);
 
 static uint8_t identifier_constant(Token *name) {
   return make_constant(OBJ_VAL(copy_string(name->start, name->length, false)));
@@ -462,10 +464,22 @@ static void binary(bool can_assign) {
 
 static void call(bool can_assign) {
   uint8_t arg_count = argument_list();
-  emit_bytes(OP_CALL, arg_count);
+  if (strncmp(parser.previous.start, "super", 5) == 0) {
+    Token token = synthetic_token("init");
+    uint8_t init = identifier_constant(&token);
+    emit_constant(FALSE_VAL);
+    emit_bytes(OP_SUPER_INVOKE, init);
+    emit_byte(arg_count);
+  } else {
+    emit_bytes(OP_CALL, arg_count);
+  }
 }
 
 static void dot(bool can_assign) {
+  bool this = false;
+  if (strncmp(parser.prev_previous.start, "this", 4) == 0) {
+    this = true;
+  }
   consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
   uint8_t name = identifier_constant(&parser.previous);
   if (can_assign && match(TOKEN_EQUAL)) {
@@ -473,6 +487,7 @@ static void dot(bool can_assign) {
     emit_bytes(OP_SET_PROPERTY, name);
   } else if (match(TOKEN_LEFT_PAREN)) {
     uint8_t arg_count = argument_list();
+    emit_constant(this ? TRUE_VAL : FALSE_VAL);
     emit_bytes(OP_INVOKE, name);
     emit_byte(arg_count);
   } else {
@@ -623,7 +638,17 @@ static void super(bool can_assign) {
   } else if (!current_class->has_superclass) {
     error("Can't use 'super' in a class with no superclass");
   }
-  consume(TOKEN_DOT, "Expect '.' after 'super'.");
+  if (match(TOKEN_LEFT_PAREN)) {
+    Token token = synthetic_token("init");
+    uint8_t init = identifier_constant(&token);
+    named_variable(synthetic_token("this"), false);
+    uint8_t arg_count = argument_list();
+    named_variable(synthetic_token("super"), false);
+    emit_bytes(OP_SUPER_INVOKE, init);
+    emit_byte(arg_count);
+    return;
+  }
+  consume(TOKEN_DOT, "Expect '.' or '(' after 'super'.");
   consume(TOKEN_IDENTIFIER, "Expect superclass method name.");
   uint8_t name = identifier_constant(&parser.previous);
   named_variable(synthetic_token("this"), false);
@@ -644,6 +669,14 @@ static void this(bool can_assign) {
     return;
   }
   variable(false);
+  if (match(TOKEN_LEFT_PAREN)) {
+    uint8_t arg_count = argument_list();
+    Token token = synthetic_token("init");
+    uint8_t init = identifier_constant(&token);
+    emit_constant(TRUE_VAL);
+    emit_bytes(OP_INVOKE, init);
+    emit_byte(arg_count);
+  }
 }
 
 static void array_access(bool can_assign) {
@@ -704,7 +737,7 @@ ParseRule rules[] = {
     [TOKEN_MINUS] = {unary, binary, PREC_TERM},
     [TOKEN_PLUS] = {NULL, binary, PREC_TERM},
     [TOKEN_SEMICOLON] = {NULL, NULL, PREC_NONE},
-    [TOKEN_QUESTION] = {NULL, ternary, PREC_NONE},
+    [TOKEN_QUESTION] = {NULL, ternary, PREC_TERM},
     [TOKEN_SLASH] = {NULL, binary, PREC_FACTOR},
     [TOKEN_STAR] = {NULL, binary, PREC_FACTOR},
     [TOKEN_BANG] = {unary, NULL, PREC_NONE},
@@ -804,6 +837,10 @@ static void function(FunctionType type) {
 }
 
 static void method() {
+  bool private = false;
+  if (match(TOKEN_PRIVATE)) {
+    private = true;
+  }
   consume(TOKEN_IDENTIFIER, "Expect method name.");
   uint8_t constant = identifier_constant(&parser.previous);
   FunctionType type = TYPE_METHOD;
@@ -812,7 +849,11 @@ static void method() {
     type = TYPE_INITIALIZER;
   }
   function(type);
-  emit_bytes(OP_METHOD, constant);
+  if (private) {
+    emit_bytes(OP_PRIVATE_METHOD, constant);
+  } else {
+    emit_bytes(OP_METHOD, constant);
+  }
 }
 
 static void class_declaration() {
