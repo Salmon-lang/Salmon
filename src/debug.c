@@ -95,7 +95,7 @@ size_t disassemble_instruction(Chunk *chunk, size_t offset) {
     return constant_instruction("OP_GET_SUPER", chunk, offset);
   case OP_GET_ELEMENT:
     return simple_instruction("OP_GET_ELEMENT", offset);
-    case OP_SET_ELEMENT:
+  case OP_SET_ELEMENT:
     return simple_instruction("OP_SET_ELEMENT", offset);
   case OP_EQUAL:
     return simple_instruction("OP_EQUAL", offset);
@@ -152,6 +152,8 @@ size_t disassemble_instruction(Chunk *chunk, size_t offset) {
     return simple_instruction("OP_INHERIT", offset);
   case OP_METHOD:
     return constant_instruction("OP_METHOD", chunk, offset);
+  case OP_PRIVATE_METHOD:
+    return constant_instruction("OP_PRIVATE_METHOD", chunk, offset);
   default:
     printf("Unkown opcode %d\n", chunk->code[offset]);
     return offset - 1;

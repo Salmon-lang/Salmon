@@ -245,9 +245,10 @@ static bool call_value(Value callee, size_t arg_count) {
 ///   A boolean indicating whether the invocation was successful.
 ///   If false, a runtime error occurred.
 static bool invoke_from_class(ObjClass *class, ObjString *name,
-                              size_t arg_count) {
+                              size_t arg_count, bool is_this) {
   Value method;
-  if (!table_get(&class->methods, name, &method)) {
+  if (!table_get(&class->methods, name, &method) &&
+      !(is_this && table_get(&class->private_methods, name, &method))) {
     runtime_error("Undefined property '%s'.", name->chars);
     return false;
   }
@@ -264,7 +265,8 @@ static bool invoke_from_class(ObjClass *class, ObjString *name,
 ///   A boolean indicating whether the invocation was successful.
 ///   If false, a runtime error occurred.
 static bool invoke(ObjString *name, size_t arg_count) {
-  Value reciever = peek(arg_count);
+  Value is_this = peek(arg_count);
+  Value reciever = peek(arg_count + 1);
   if (!IS_INSTANCE(reciever)) {
     runtime_error("Only instances have methods.");
     return false;
@@ -277,7 +279,7 @@ static bool invoke(ObjString *name, size_t arg_count) {
     return call_value(value, arg_count);
   }
   // if not fount in the instance, looks for the method in its class
-  return invoke_from_class(instance->klass, name, arg_count);
+  return invoke_from_class(instance->klass, name, arg_count, AS_BOOL(is_this));
 }
 /// Binds a method to an object instance by creating a bound method.
 ///
@@ -344,10 +346,14 @@ static void close_upvalue(Value *last) {
 ///
 /// Parameters:
 ///   name: The name of the method.
-static void define_method(ObjString *name) {
+static void define_method(ObjString *name, bool private) {
   Value method = peek(0);
   ObjClass *class = AS_CLASS(peek(1));
-  table_set(&class->methods, name, method);
+  if (private) {
+    table_set(&class->private_methods, name, method);
+  } else {
+    table_set(&class->methods, name, method);
+  }
   pop();
 }
 /// Checks if a given value is "falsey" according to Lox rules (in Salmon 0 is
@@ -712,7 +718,7 @@ static InterpretResult run() {
       ObjString *method = READ_STRING();
       size_t arg_count = READ_BYTE();
       ObjClass *superclass = AS_CLASS(pop());
-      if (!invoke_from_class(superclass, method, arg_count)) {
+      if (!invoke_from_class(superclass, method, arg_count, false)) {
         return INTERPRET_RUNTIME_ERROR;
       }
       frame = &vm.frames[vm.frame_count - 1];
@@ -761,11 +767,15 @@ static InterpretResult run() {
       }
       ObjClass *subclass = AS_CLASS(peek(0));
       table_add_all(&AS_CLASS(superclass)->methods, &subclass->methods);
+      table_add_all(&AS_CLASS(superclass)->private_methods, &subclass->private_methods);
       pop();
       break;
     }
     case OP_METHOD:
-      define_method(READ_STRING());
+      define_method(READ_STRING(), false);
+      break;
+    case OP_PRIVATE_METHOD:
+      define_method(READ_STRING(), true);
       break;
     case OP_CONSTANT: {
       Value constant = READ_CONSTANT();

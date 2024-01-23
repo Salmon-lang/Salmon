@@ -47,6 +47,7 @@ typedef enum TokenType {
   TOKEN_IF,
   TOKEN_NIL,
   TOKEN_OR,
+  TOKEN_PRIVATE,
   TOKEN_RETURN,
   TOKEN_SUPER,
   TOKEN_THIS,
